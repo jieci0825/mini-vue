@@ -1,1 +1,1 @@
-export * from './reactive'
+export { reactive } from './reactive'

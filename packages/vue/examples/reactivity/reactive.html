@@ -1,0 +1,30 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Document</title>
+</head>
+
+<body>
+    <script src="../../dist/mini-vue.js"></script>
+    <script>
+        const { reactive } = MiniVue
+
+        const obj1 = {
+            name: '张三',
+            age: 18,
+            hobby: ['吃饭', '睡觉', '打豆豆']
+        }
+
+        const state = reactive(obj1)
+        const state2 = reactive(obj1)
+
+        console.log(state)
+        console.log(state === state2)
+
+    </script>
+</body>
+
+</html>
