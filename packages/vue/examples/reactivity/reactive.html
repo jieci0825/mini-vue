@@ -10,20 +10,60 @@
 <body>
     <script src="../../dist/mini-vue.js"></script>
     <script>
-        const { reactive } = MiniVue
+        const { reactive, effect } = MiniVue
 
         const obj1 = {
             name: '张三',
             age: 18,
-            hobby: ['吃饭', '睡觉', '打豆豆']
+            hobby: ['吃饭', '睡觉', '打豆豆'],
+            info: {
+                address: '北京'
+            }
         }
 
         const state = reactive(obj1)
-        const state2 = reactive(obj1)
 
-        console.log(state)
-        console.log(state === state2)
+        function fn1() {
+            // for (const key in state) {
+            // }
+            console.log('fn1', state.name)
+        }
 
+        function fn2() {
+            console.log('fn2', state.name)
+        }
+
+        effect(fn1)
+        effect(fn2)
+
+        state.name = '李四'
+
+        // 迭代
+        // function foo() {
+        //     for (const key in state) {
+        //         console.log('test: ', key)
+        //     }
+        // }
+        // foo()
+
+
+        // ******* 数组测试 *******
+        // const obj = {
+        //     name: '李四'
+        // }
+        // const arr = [1, obj, 3, 4, 5]
+
+        // const state2 = reactive(arr)
+        // console.log(state2.includes(obj))
+
+        // 不触发 length
+        // state2[7] = 8
+
+        // 不触发 delete
+        // state2.length = 3
+
+        // 调用 push，会读取 push，此时禁止触发 length
+        // state2.push(6)
     </script>
 </body>
 
