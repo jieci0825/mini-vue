@@ -38,6 +38,10 @@
 
         state.name = '李四'
 
+        const state1 = reactive(state)
+
+        console.log(state1 === state)
+
         // 迭代
         // function foo() {
         //     for (const key in state) {
