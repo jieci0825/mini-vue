@@ -63,7 +63,6 @@
         // state2.b = 222 // 此时应该会还会运行一次 foo，但是不会运行,但是没有运行
 
         // ************ case3 ************
-        // 解决组件嵌套的问题
         // Error: Uncaught TypeError: Cannot read properties of undefined (reading 'a')
         const state3 = reactive({
             a: 1,
@@ -73,6 +72,9 @@
             console.log('foo')
             state3.a++ // 导致的执行栈溢出问题
             // state3.a --> state3.a = state3.a + 1
+            // 这行代码就表示，state3.a 这个属性被读取了，所以会收集依赖，而后 state3.a 被修改了，所以会触发依赖
+            // 触发依赖之后又重新运行 foo，导致无限循环，所以循环执行的 effect 和 activeEffect(表示正在被收集依赖) 一致时，则跳过当前 effect
+            // 等待依赖收集完毕之后，再重新运行 effect，即 foo
         }
 
         effect(foo)
