@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Document</title>
+</head>
+
+<body>
+    <script src="../../dist/mini-vue.js"></script>
+    <script>
+        const { reactive, effect } = MiniVue
+
+        // ************ case1 ************
+        // 尚未解决：
+        // const state = reactive({
+        //     a: 1,
+        //     b: 2,
+        //     c: 3
+        // })
+
+        // function fn() {
+        //     console.log('fn')
+        //     state.a
+        //     if (state.a === 1) {
+        //         console.log(state.b);
+        //     } else {
+        //         console.log(state.c);
+        //     }
+        // }
+
+        // effect(fn)
+        /**
+         * 此时将 a 改为 111，则不会进入第一个分支，输出 console.log(state.b);
+         * 所以 state.b 如果被改变就不应该触发 fn 重新运行
+         */
+        // state.a = 111
+        // state.b = 222
+        // window.update = () => {
+        //     state.a = 1
+        // }
+
+        // ************ case2 ************
+        // 解决组件嵌套的问题
+        // const state2 = reactive({
+        //     a: 1,
+        //     b: 2,
+        //     c: 3
+        // })
+
+        // function foo() {
+        //     console.log('foo')
+        //     effect(() => {
+        //         console.log('inner')
+        //         state2.a
+        //     })
+        //     state2.b
+        // }
+
+        // effect(foo)
+        // // state2.a = 111 // 此时会在运行一次 inner
+        // state2.b = 222 // 此时应该会还会运行一次 foo，但是不会运行,但是没有运行
+
+        // ************ case3 ************
+        // 解决组件嵌套的问题
+        // Error: Uncaught TypeError: Cannot read properties of undefined (reading 'a')
+        const state3 = reactive({
+            a: 1,
+        })
+
+        function foo() {
+            console.log('foo')
+            state3.a++ // 导致的执行栈溢出问题
+            // state3.a --> state3.a = state3.a + 1
+        }
+
+        effect(foo)
+    </script>
+</body>
+
+</html>

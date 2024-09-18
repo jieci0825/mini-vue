@@ -1,25 +1,45 @@
 import { ITERATE_KEY } from './constants'
 import { createDep, Dep } from './dep'
 import { TrackOpType, TriggerOpType } from './operations'
+import { ComputedRefImpl } from './computed'
 
-let isTracking = true
+let shouldTrack = true
 
 type KeyToDepMap = Map<any, Dep>
 
 const targetMap = new WeakMap<any, KeyToDepMap>()
 
 export let activeEffect: ReactiveEffect | undefined = undefined
+const effectStack: ReactiveEffect[] = []
 
 export function effect<T = any>(fn: () => T) {
     const _effect = new ReactiveEffect(fn)
-    _effect.run()
+    try {
+        _effect.run()
+    } finally {
+        // 执行完 fn 后，将 activeEffect 置为 undefined
+        // activeEffect = undefined
+        // 直接置空会导致嵌套 effect 出现问题，会让最内层的effect执行完成之后，外层后续还有effect执行时，activeEffect为undefined
+
+        // 所以采用执行栈来解决
+        // 1. 删除最后一个effect
+        effectStack.pop()
+        // 2. 将执行删除操作后的最后一个effect赋值给activeEffect
+        activeEffect = effectStack[effectStack.length - 1]
+    }
 }
 
 export class ReactiveEffect<T = any> {
-    constructor(public fn: () => T) {}
+    computed?: ComputedRefImpl<T>
+    depSetList: Dep[] = [] // [Set<Dep>, Set<Dep>, Set<Dep>] 将所有的依赖集合(Set)存储到这个数组中
+    constructor(public fn: () => T) {
+        this.fn = fn
+    }
 
     run() {
         activeEffect = this
+        effectStack.push(this)
+        // 执行 fn，收集依赖
         return this.fn()
     }
 }
@@ -32,7 +52,7 @@ export class ReactiveEffect<T = any> {
  */
 export function track(target: object, type: TrackOpType, key: unknown) {
     // 停止收集依赖期间或者 activeEffect 为空，则不收集
-    if (!isTracking || !activeEffect) return
+    if (!shouldTrack || !activeEffect) return
 
     // 如果是迭代类型，则 key 为空，此时则需要给 prop 赋值为指定的 symbol
     const prop = type === TrackOpType.ITERATE ? ITERATE_KEY : key
@@ -53,8 +73,6 @@ export function track(target: object, type: TrackOpType, key: unknown) {
     }
     // 此时在将此次收集的 activeEffect 添加到集合中
     trackEffects(deps)
-
-    // console.log('targetMap', targetMap)
 }
 
 /**
@@ -62,7 +80,13 @@ export function track(target: object, type: TrackOpType, key: unknown) {
  * @param deps
  */
 export function trackEffects(deps: Dep) {
-    deps.add(activeEffect!)
+    if (!deps.has(activeEffect!)) {
+        deps.add(activeEffect!)
+        // 同时本次的 deps 也需要添加到 activeEffect 的 depList 中
+        //  - 保证后续每次执行之前能实现在所有的 Set<Dep> 中能精准的清空当前函数的依赖
+        //  - 即记录下来这个要执行的依赖出现过在哪些集合里面
+        activeEffect!.depSetList.push(deps)
+    }
 }
 
 /**
@@ -86,9 +110,28 @@ export function trigger(target: object, type: TriggerOpType, key: unknown, newVa
  */
 export function triggerEffects(deps: Dep) {
     // 依次触发
-    deps.forEach(effect => {
+    for (const effect of deps) {
+        // !此处清除会出现死循环，待解决
+        // cleanupEffect(effect)
+
+        // 如果当前 effect 等于 activeEffect，则跳过
+        if (effect === activeEffect) {
+            continue
+        }
         triggerEffect(effect)
-    })
+    }
+}
+
+/**
+ * 清空依赖
+ */
+export function cleanupEffect(effect: ReactiveEffect) {
+    for (const depSet of effect.depSetList) {
+        // 清除上一次旧的依赖
+        depSet.delete(effect)
+    }
+    // 清空依赖集合
+    effect.depSetList.length = 0
 }
 
 /**
@@ -102,12 +145,12 @@ export function triggerEffect(effect: ReactiveEffect) {
  * 暂停依赖收集
  */
 export function pauseTracking() {
-    isTracking = false
+    shouldTrack = false
 }
 
 /**
  * 恢复依赖收集
  */
 export function resumeTracking() {
-    isTracking = true
+    shouldTrack = true
 }
