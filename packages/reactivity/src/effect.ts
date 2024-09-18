@@ -8,7 +8,7 @@ type KeyToDepMap = Map<any, Dep>
 
 const targetMap = new WeakMap<any, KeyToDepMap>()
 
-let activeEffect: ReactiveEffect | undefined = undefined
+export let activeEffect: ReactiveEffect | undefined = undefined
 
 export function effect<T = any>(fn: () => T) {
     const _effect = new ReactiveEffect(fn)

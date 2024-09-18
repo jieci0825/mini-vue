@@ -13,6 +13,7 @@ function createReactiveObject(target: object, baseHandlers: ProxyHandler<any>, p
     if (!isObject(target)) {
         return target
     }
+
     // 如果 target 就是一个代理对象，则直接返回
     if (isReactive(target)) {
         return target
@@ -23,15 +24,21 @@ function createReactiveObject(target: object, baseHandlers: ProxyHandler<any>, p
     if (existingProxy) {
         return existingProxy
     }
+
     // 创建代理对象
     const proxy = new Proxy(target, baseHandlers)
     // 将代理对象和 target 存储到 proxyMap 中
     proxyMap.set(target, proxy)
+    // 添加标识，表示 target 已经是一个代理对象
     proxy[IsReactive] = true
     // 返回代理对象
     return proxy
 }
 
-function isReactive(target: any) {
+export function isReactive(target: any) {
     return !!(target && target[IsReactive])
+}
+
+export function toReactive(value: any) {
+    return isObject(value) ? reactive(value) : value
 }
