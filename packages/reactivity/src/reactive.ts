@@ -14,7 +14,7 @@ function createReactiveObject(target: object, baseHandlers: ProxyHandler<any>, p
         return target
     }
     // 如果 target 就是一个代理对象，则直接返回
-    if (target[IsReactive]) {
+    if (isReactive(target)) {
         return target
     }
 
@@ -30,4 +30,8 @@ function createReactiveObject(target: object, baseHandlers: ProxyHandler<any>, p
     proxy[IsReactive] = true
     // 返回代理对象
     return proxy
+}
+
+function isReactive(target: any) {
+    return !!(target && target[IsReactive])
 }
