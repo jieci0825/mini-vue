@@ -1,8 +1,7 @@
-import { hasChanged, isObject } from '@vue/shared'
+import { hasChanged } from '@vue/shared'
 import { IsRef } from './constants'
-import { activeEffect, track, trackEffects, triggerEffects } from './effect'
-import { TrackOpType } from './operations'
-import { reactive, toReactive } from './reactive'
+import { activeEffect, trackEffects, triggerEffects } from './effect'
+import { toReactive } from './reactive'
 import { createDep, Dep } from './dep'
 
 class RefImpl {
