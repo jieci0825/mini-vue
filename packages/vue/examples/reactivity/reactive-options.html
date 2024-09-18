@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Document</title>
+</head>
+
+<body>
+    <script src="../../dist/mini-vue.js"></script>
+    <script>
+        const { reactive, effect } = MiniVue
+        const obj = {
+            name: '张三',
+            age: 20
+        }
+
+        const state = reactive(obj)
+
+        let count = 0
+
+        const e = effect(() => {
+            console.log(state.name, state.age)
+        }, {
+            lazy: true,
+            scheduler: (effect) => {
+                count++
+                if (count === 1) {
+                    console.log('调度器执行了', effect.fn())
+                }
+            }
+        })
+
+        e()
+
+        // 懒执行
+        // window.exec = () => {
+        //     e()
+        // }
+
+        // 多次修改同一个属性时，每次修改都会执行一次 foo，可以通过传入调度器，将执行的权利交给使用者
+        state.age++
+        state.age++
+        state.age++
+    </script>
+</body>
+
+</html>

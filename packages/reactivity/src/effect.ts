@@ -12,35 +12,52 @@ const targetMap = new WeakMap<any, KeyToDepMap>()
 export let activeEffect: ReactiveEffect | undefined = undefined
 const effectStack: ReactiveEffect[] = []
 
-export function effect<T = any>(fn: () => T) {
-    const _effect = new ReactiveEffect(fn)
-    try {
-        _effect.run()
-    } finally {
-        // 执行完 fn 后，将 activeEffect 置为 undefined
-        // activeEffect = undefined
-        // 直接置空会导致嵌套 effect 出现问题，会让最内层的effect执行完成之后，外层后续还有effect执行时，activeEffect为undefined
+interface ReactiveEffectOptions {
+    lazy?: boolean
+    scheduler?: (effect: ReactiveEffect) => void
+}
+export function effect<T = any>(fn: () => T, options: ReactiveEffectOptions = {}) {
+    const defaultOptions = {
+        lazy: false
+    }
+    const _options = Object.assign(defaultOptions, options)
 
-        // 所以采用执行栈来解决
-        // 1. 删除最后一个effect
-        effectStack.pop()
-        // 2. 将执行删除操作后的最后一个effect赋值给activeEffect
-        activeEffect = effectStack[effectStack.length - 1]
+    const _effect = new ReactiveEffect(fn, options)
+
+    if (_options.lazy === true) {
+        return _effect.run.bind(_effect)
+    } else {
+        _effect.run()
     }
 }
 
 export class ReactiveEffect<T = any> {
     computed?: ComputedRefImpl<T>
+    scheduler?: (effect: ReactiveEffect) => void
     depSetList: Dep[] = [] // [Set<Dep>, Set<Dep>, Set<Dep>] 将所有的依赖集合(Set)存储到这个数组中
-    constructor(public fn: () => T) {
+    constructor(public fn: () => T, options: ReactiveEffectOptions = {}) {
+        if (options.scheduler) {
+            this.scheduler = options.scheduler
+        }
         this.fn = fn
     }
 
     run() {
-        activeEffect = this
-        effectStack.push(this)
-        // 执行 fn，收集依赖
-        return this.fn()
+        try {
+            activeEffect = this
+            effectStack.push(this)
+            // 执行 fn，收集依赖
+            return this.fn()
+        } finally {
+            // 执行完 fn 后，将 activeEffect 置为 undefined
+            // activeEffect = undefined
+            // 直接置空会导致嵌套 effect 出现问题，会让最内层的effect执行完成之后，外层后续还有effect执行时，activeEffect为undefined
+            // 所以采用执行栈来解决
+            // 1. 删除最后一个effect
+            effectStack.pop()
+            // 2. 将执行删除操作后的最后一个effect赋值给activeEffect
+            activeEffect = effectStack[effectStack.length - 1]
+        }
     }
 }
 
@@ -138,7 +155,12 @@ export function cleanupEffect(effect: ReactiveEffect) {
  * 触发指定依赖
  */
 export function triggerEffect(effect: ReactiveEffect) {
-    effect.run()
+    // 存在调度器则使用调度器执行
+    if (effect.scheduler) {
+        effect.scheduler(effect)
+    } else {
+        effect.run()
+    }
 }
 
 /**
