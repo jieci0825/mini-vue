@@ -22,7 +22,7 @@ export function effect<T = any>(fn: () => T, options: ReactiveEffectOptions = {}
     }
     const _options = Object.assign(defaultOptions, options)
 
-    const _effect = new ReactiveEffect(fn, options)
+    const _effect = new ReactiveEffect(fn, options.scheduler)
 
     if (_options.lazy === true) {
         return _effect.run.bind(_effect)
@@ -31,13 +31,15 @@ export function effect<T = any>(fn: () => T, options: ReactiveEffectOptions = {}
     }
 }
 
+export type EffectScheduler = (effect: ReactiveEffect) => void
+
 export class ReactiveEffect<T = any> {
     computed?: ComputedRefImpl<T>
-    scheduler?: (effect: ReactiveEffect) => void
+    scheduler?: EffectScheduler
     depSetList: Dep[] = [] // [Set<Dep>, Set<Dep>, Set<Dep>] 将所有的依赖集合(Set)存储到这个数组中
-    constructor(public fn: () => T, options: ReactiveEffectOptions = {}) {
-        if (options.scheduler) {
-            this.scheduler = options.scheduler
+    constructor(public fn: () => T, scheduler: EffectScheduler | undefined = undefined) {
+        if (scheduler) {
+            this.scheduler = scheduler
         }
         this.fn = fn
     }
@@ -126,6 +128,7 @@ export function trigger(target: object, type: TriggerOpType, key: unknown, newVa
  * 依次触发 deps 中保存的依赖
  */
 export function triggerEffects(deps: Dep) {
+    if (!deps) return
     // 依次触发
     for (const effect of deps) {
         // !此处清除会出现死循环，待解决

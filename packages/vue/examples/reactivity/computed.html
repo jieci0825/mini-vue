@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Document</title>
+</head>
+
+<body>
+    <div>
+        <ul>
+            <li>Lorem.</li>
+            <li>Lorem.</li>
+            <li>Lorem.</li>
+        </ul>
+    </div>
+
+    <script src="../../dist/mini-vue.js"></script>
+    <script>
+        const { computed, ref, reactive, effect } = MiniVue
+
+        const lis = Array.from(document.querySelectorAll('li'))
+
+
+        const state = reactive({
+            name: '张三'
+        })
+
+        const computedName = computed(() => {
+            console.log('getter 执行')
+            return '姓名：' + state.name
+        })
+
+        effect(() => {
+            lis.forEach((li) => {
+                li.innerText = computedName.value
+            })
+        })
+
+        window.update = () => {
+            state.name = '李四'
+        }
+
+        const state1 = reactive({
+            a: 1,
+            b: 2
+        })
+
+        const sum = computed(() => {
+            console.log('getter sum 执行')
+            return state1.a + state1.b
+        })
+
+        // 多次打印只会触发一次输出一次 console.log('getter sum 执行')
+        console.log(sum.value)
+        console.log(sum.value)
+        console.log(sum.value)
+        state1.a++
+        state1.a++
+        state1.a++
+        console.log(sum.value)
+        console.log(sum.value)
+        console.log(sum.value)
+
+    </script>
+</body>
+
+</html>

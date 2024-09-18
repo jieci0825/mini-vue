@@ -4,14 +4,14 @@ import { activeEffect, trackEffects, triggerEffects } from './effect'
 import { toReactive } from './reactive'
 import { createDep, Dep } from './dep'
 
-class RefImpl {
-    private _value: unknown
+class RefImpl<T> {
+    private _value: T
     private _rawValue: unknown
 
     public deps?: Dep = undefined
     public readonly [IsRef] = true
 
-    constructor(value: unknown, public readonly __v_isShallow: boolean) {
+    constructor(value: T, public readonly __v_isShallow: boolean) {
         this._rawValue = value
         this._value = __v_isShallow ? value : toReactive(value)
     }
@@ -36,18 +36,18 @@ class RefImpl {
     }
 }
 
-export function ref(value?: unknown) {
-    return crateRef(value, false)
+export function ref<T>(value?: unknown) {
+    return crateRef<T>(value as T, false)
 }
 
-function crateRef(rawValue: unknown, shallow: boolean) {
+function crateRef<T>(rawValue: T, shallow: boolean) {
     if (isRef(rawValue)) {
         return rawValue
     }
-    return new RefImpl(rawValue, shallow)
+    return new RefImpl<T>(rawValue, shallow)
 }
 
-export function trackRefValue(ref: RefImpl) {
+export function trackRefValue(ref: any) {
     if (activeEffect) {
         // 创建一个依赖集合：ref.deps
         const deps = ref.deps || (ref.deps = createDep())
@@ -57,7 +57,7 @@ export function trackRefValue(ref: RefImpl) {
     }
 }
 
-export function triggerRefValue(ref: RefImpl) {
+export function triggerRefValue(ref: any) {
     triggerEffects(ref.deps!)
 }
 
