@@ -26,6 +26,8 @@ export const isEqual = (value1: any, value2: any) => {
     return Object.is(value1, value2)
 }
 
+export const extend = Object.assign
+
 /**
  * 新旧两个值是否有变化
  * @param oldValue 旧值
