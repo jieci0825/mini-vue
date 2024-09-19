@@ -20,7 +20,7 @@
         watch(() => state.age, (newVal, oldVal) => {
             console.log("state.age:", newVal, oldVal);
         }, {
-            immediate: false
+            immediate: true
         })
         state.age++
         console.log('age 自增了')

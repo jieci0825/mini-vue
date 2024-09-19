@@ -1,5 +1,5 @@
 import { isReactive, isRef } from '@vue/reactivity'
-import { EMPTY_OBJ, isFunction } from '@vue/shared'
+import { EMPTY_OBJ, hasChanged, isFunction } from '@vue/shared'
 import { ReactiveEffect } from 'packages/reactivity/src/effect'
 import { queuePreFlushCbs } from './scheduler'
 
@@ -43,15 +43,15 @@ function doWatch(source, cb: Function, options: WatchOptions = EMPTY_OBJ) {
     const effect = new ReactiveEffect(getter, scheduler)
 
     // 初始化旧值
-    let oldValue = effect.run()
+    let oldValue: any = undefined
 
     const job = () => {
         if (cb) {
             const newValue = effect.run()
-            if (deep) {
-                cb(newValue, newValue)
-            } else {
+            if (deep || hasChanged(oldValue, newValue)) {
                 cb(newValue, oldValue)
+                // 执行完成之后，更新旧值
+                oldValue = newValue
             }
         }
     }
@@ -63,8 +63,16 @@ function doWatch(source, cb: Function, options: WatchOptions = EMPTY_OBJ) {
     if (cb) {
         // 是否立即执行
         if (immediate) {
-            // 将回调函数加入微任务队列在执行
-            queuePreFlushCbs(job)
+            job()
+        } else {
+            // 初始化旧值
+            oldValue = effect.run()
         }
+    } else {
+        effect.run()
+    }
+
+    return () => {
+        effect.stop()
     }
 }
