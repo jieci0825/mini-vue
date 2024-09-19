@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Document</title>
+</head>
+
+<body>
+    <script src="../../dist/mini-vue.js"></script>
+    <script>
+        const { reactive, effect, queuePreFlushCbs } = MiniVue
+
+        const state = reactive({
+            count: 0,
+        })
+
+        effect(() => {
+            console.log('effect', state.count)
+        }, {
+            scheduler: () => {
+                setTimeout(() => {
+                    console.log('scheduler', state.count)
+                })
+            }
+        })
+
+        state.count++
+        state.count++
+
+    </script>
+</body>
+
+</html>

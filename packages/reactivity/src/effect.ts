@@ -96,7 +96,6 @@ export function track(target: object, type: TrackOpType, key: unknown) {
 
 /**
  * 利用 dep 依次跟踪指定 key 的所有 effect
- * @param deps
  */
 export function trackEffects(deps: Dep) {
     if (!deps.has(activeEffect!)) {
