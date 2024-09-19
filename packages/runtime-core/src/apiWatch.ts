@@ -1,5 +1,5 @@
 import { isReactive, isRef } from '@vue/reactivity'
-import { EMPTY_OBJ, hasChanged, isFunction } from '@vue/shared'
+import { EMPTY_OBJ, hasChanged, isFunction, isObject } from '@vue/shared'
 import { ReactiveEffect } from 'packages/reactivity/src/effect'
 import { queuePreFlushCbs } from './scheduler'
 
@@ -22,7 +22,14 @@ function doWatch(source, cb: Function, options: WatchOptions = EMPTY_OBJ) {
     let getter: () => any
     // 如果数据源是一个代理对象，创建一个访问数据源的函数，且 deep 自动为 true
     if (isReactive(source)) {
-        getter = () => source
+        getter = () => {
+            // 手动触发依赖收集
+            //  - 这是一个取巧的方法，还需要考虑source的属性是一个对象的情况，需要递归处理
+            // for (const key in source) {
+            //     source[key]
+            // }
+            return source
+        }
         deep = true
     }
     // 如果数据源是一个 ref 对象，创建一个访问 ref.value 的函数
@@ -38,6 +45,13 @@ function doWatch(source, cb: Function, options: WatchOptions = EMPTY_OBJ) {
     else {
         getter = () => {}
         console.warn('监听的数据源类型错误')
+    }
+
+    // 检测是否需要深度监听
+    if (cb && deep) {
+        // 如果需要手动监听，则将 source 里面所有的属性都手动获取一次，实现依赖全收集
+        const baseGetter = getter
+        getter = () => traverse(baseGetter())
     }
 
     const effect = new ReactiveEffect(getter, scheduler)
@@ -75,4 +89,13 @@ function doWatch(source, cb: Function, options: WatchOptions = EMPTY_OBJ) {
     return () => {
         effect.stop()
     }
+}
+
+function traverse(value: any) {
+    if (!isObject(value)) return value
+    // 如果是一个对象，进行递归遍历，每次属性都获取一次，实现依赖收集
+    for (const key in value) {
+        traverse(value[key])
+    }
+    return value
 }

@@ -17,18 +17,29 @@
             name: "张三",
             age: 18
         })
-        watch(() => state.age, (newVal, oldVal) => {
-            console.log("state.age:", newVal, oldVal);
+        // watch(() => state.age, (newVal, oldVal) => {
+        //     console.log("state.age:", newVal, oldVal);
+        // }, {
+        //     immediate: true
+        // })
+        // state.age++
+        // console.log('age 自增了')
+        // window.increaseAge = () => {
+        //     state.age++
+        // }
+
+        // case2: 监听一个 完整的 reactive 对象
+        watch(state, (newVal, oldVal) => {
+            console.log('watch 触发')
+            console.log(newVal, oldVal)
         }, {
             immediate: true
         })
-        state.age++
-        console.log('age 自增了')
-        window.increaseAge = () => {
-            state.age++
+
+        window.update = () => {
+            state.name = '李四'
         }
 
-        // case2: 监听一个 ref 的属性
     </script>
 </body>
 
