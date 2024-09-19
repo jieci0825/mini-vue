@@ -61,6 +61,11 @@ export class ReactiveEffect<T = any> {
             activeEffect = effectStack[effectStack.length - 1]
         }
     }
+
+    stop() {
+        // TODO
+        console.log('effect stop')
+    }
 }
 
 /**

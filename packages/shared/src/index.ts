@@ -28,6 +28,8 @@ export const isEqual = (value1: any, value2: any) => {
 
 export const extend = Object.assign
 
+export const EMPTY_OBJ: { readonly [key: string]: any } = {}
+
 /**
  * 新旧两个值是否有变化
  * @param oldValue 旧值

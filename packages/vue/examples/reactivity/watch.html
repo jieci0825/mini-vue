@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Document</title>
+</head>
+
+<body>
+    <script src="../../dist/mini-vue.js"></script>
+    <script>
+        const { ref, reactive, watch, effect } = MiniVue
+
+        // case1: 监听一个 reactive 的属性
+        const state = reactive({
+            name: "张三",
+            age: 18
+        })
+        watch(() => state.age, (newVal, oldVal) => {
+            console.log("state.age:", newVal, oldVal);
+        }, {
+            immediate: false
+        })
+        state.age++
+        console.log('age 自增了')
+        window.increaseAge = () => {
+            state.age++
+        }
+
+        // case2: 监听一个 ref 的属性
+    </script>
+</body>
+
+</html>
