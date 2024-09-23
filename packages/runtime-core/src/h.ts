@@ -29,6 +29,7 @@ export function h(vnode: any, propsOrChildren?: any, children?: any): VNode {
         }
         // 参数为 3 的话，判断第三个参数是否为 VNode，如果是则将其作为 children，并包裹为数组
         else if (argsLen === 3 && isVNode(children)) {
+            // 这里需要将 children 包裹为数组，是因为后续在处理一个元素的子节点时，统一处理为数组比较方便，不需要额外进行判断
             children = [children]
         }
         return createVNode(vnode, propsOrChildren, children)

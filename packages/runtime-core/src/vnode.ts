@@ -13,6 +13,7 @@ export interface VNode {
     props: any
     children: any
     shapeFlag: number
+    el: any
 }
 
 export const isVNode = (vnode: any) => {
@@ -46,7 +47,8 @@ function createBaseVNode(type: any, props: any, children: any, shapeFlag: number
         type,
         props,
         children,
-        shapeFlag
+        shapeFlag,
+        el: null
     }
 
     normalizeChildren(vnode, children)
@@ -73,6 +75,7 @@ export function normalizeChildren(vnode: VNode, children: any) {
     }
     // 都不是，则当做一个文本节点处理
     else {
+        // 如果是一个 children 是一个字符串，则 ShapeFlags 需要包含这个类型，便于后续创建元素的时候可以通过这个来是否生成文本节点
         type = ShapeFlags.TEXT_CHILDREN
         children = String(children)
     }

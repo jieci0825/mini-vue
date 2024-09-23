@@ -26,7 +26,7 @@ export const isEqual = (value1: any, value2: any) => {
     return Object.is(value1, value2)
 }
 
-export const extend = Object.assign
+export const extend: typeof Object.assign = Object.assign
 
 export const EMPTY_OBJ: { readonly [key: string]: any } = {}
 
@@ -38,4 +38,11 @@ export const EMPTY_OBJ: { readonly [key: string]: any } = {}
  */
 export const hasChanged = (oldValue: unknown, newValue: unknown): boolean => {
     return !Object.is(oldValue, newValue)
+}
+
+/**
+ * 是否是以on开头的字符串
+ */
+export const isOn = (value: string): boolean => {
+    return value.startsWith('on')
 }
