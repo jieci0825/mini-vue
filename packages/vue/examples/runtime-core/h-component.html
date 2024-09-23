@@ -1,0 +1,27 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Document</title>
+</head>
+
+<body>
+    <script src="../../dist/mini-vue.js"></script>
+    <script>
+        const { h } = MiniVue
+
+        const component = {
+            render() {
+                const vnode1 = h('div', '这是一个 component 组件')
+                console.log("vnode1:", vnode1);
+                return vnode1
+            }
+        }
+        const vnode2 = h(component)
+        console.log("vnode2:", vnode2);
+    </script>
+</body>
+
+</html>

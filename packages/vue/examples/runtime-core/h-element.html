@@ -1,0 +1,29 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Document</title>
+</head>
+
+<body>
+    <script src="../../dist/mini-vue.js"></script>
+    <script>
+        const { h } = MiniVue
+
+        // case1: children 为文本节点
+        const vnode = h('div', { class: 'text' }, 'hello world')
+        console.log(vnode)
+
+        // case2: children 为数组
+        const vnode2 = h('div', { class: 'text' }, [
+            h('p', { class: 'text' }, 'hello world'),
+            h('p', { class: 'text' }, 'hello mini-vue')
+        ])
+        console.log(vnode2)
+    </script>
+
+</body>
+
+</html>
