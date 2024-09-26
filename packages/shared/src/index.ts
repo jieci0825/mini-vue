@@ -46,3 +46,10 @@ export const hasChanged = (oldValue: unknown, newValue: unknown): boolean => {
 export const isOn = (value: string): boolean => {
     return value.startsWith('on')
 }
+
+/**
+ * 将小驼峰命名转换成kebab-case命名
+ */
+export const camelToKebab = (str: string): string => {
+    return str.replace(/([A-Z])/g, '-$1').toLowerCase()
+}

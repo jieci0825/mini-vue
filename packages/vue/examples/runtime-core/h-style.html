@@ -12,17 +12,16 @@
 
     <script src="../../dist/mini-vue.js"></script>
     <script>
+
         const { h, render } = MiniVue
 
-        const comp = {
-            render() {
-                return h('div', 'hello component')
+        const vnodeEl = h('div', {
+            style: {
+                color: 'red',
+                fontSize: '20px'
             }
-        }
-
-        const vnode = h(comp)
-
-        // console.log(vnode)
+        }, '增强的 style')
+        render(vnodeEl, document.querySelector('#app'))
     </script>
 </body>
 
