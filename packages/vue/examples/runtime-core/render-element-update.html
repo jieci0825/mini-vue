@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Document</title>
+    <style>
+        .text {
+            color: gray;
+        }
+
+        .active {
+            color: seagreen;
+        }
+    </style>
+</head>
+
+<body>
+    <div id="app"></div>
+
+    <script src="../../dist/mini-vue.js"></script>
+    <script>
+
+        const { h, render } = MiniVue
+
+        const appContainer = document.getElementById('app')
+
+        const vnode = h('h1', { class: 'text' }, 'hello mini-vue')
+        render(vnode, appContainer)
+
+        const vnode2 = h('h1', null, 'update hello mini-vue2')
+        const vnode3 = h('h1', { class: 'active' }, 'update hello mini-vue2')
+        window.update = () => {
+            // render(vnode2, appContainer)
+            render(vnode3, appContainer)
+        }
+    </script>
+</body>
+
+</html>

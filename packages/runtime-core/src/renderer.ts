@@ -1,6 +1,7 @@
 import { ShapeFlags } from 'packages/shared/src/shapFlags'
 import { Comment, Fragment, Text, VNode } from './vnode'
 import { patchProp } from 'packages/runtime-dom/src/patchProp'
+import { EMPTY_OBJ } from '@vue/shared'
 
 export interface CustomElement extends Element {
     _vnode?: VNode
@@ -24,9 +25,9 @@ export interface RendererOptions {
      */
     createElement(tag: string): CustomElement
     /**
-     * 创建一个文本节点
+     * 设置元素文本内容
      */
-    // createText(text: string): Text
+    setElementText(el: CustomElement, text: string): void
 }
 
 /**
@@ -47,6 +48,16 @@ function baseCreateRenderer(options: RendererOptions): baseCreateRendererReturn 
         insert: hostInsert,
         patchProp: hostPatchProp
     } = options
+
+    /**
+     * 卸载元素
+     */
+    function unmount(vnode: VNode) {
+        // todo 简单处理
+        if (vnode.el) {
+            vnode.el.remove()
+        }
+    }
 
     /**
      * 挂载元素
@@ -76,15 +87,116 @@ function baseCreateRenderer(options: RendererOptions): baseCreateRendererReturn 
     }
 
     /**
+     * 处理节点的 prop
+     */
+    function patchProps(el: CustomElement, vnode: VNode, oldProps: any, newProps: any) {
+        if (oldProps !== newProps) {
+            // 进行新旧的 props 的属性值 对比
+            for (const key in newProps) {
+                const next = newProps[key]
+                const prev = oldProps[key]
+                // 如果新旧值不一样，则更新
+                if (next !== prev) {
+                    hostPatchProp(el, key, prev, next)
+                }
+            }
+
+            if (oldProps !== EMPTY_OBJ) {
+                // 新旧对比完成之后，在遍历一次 oldProps，如果 oldProps 中有，而 newProps 中没有，则说明是需要删除的
+                // 比如：第一次节点有 class，第二次没有，则需要删除 class
+                for (const key in oldProps) {
+                    if (!newProps.hasOwnProperty(key)) {
+                        hostPatchProp(el, key, oldProps[key], null)
+                    }
+                }
+            }
+        }
+    }
+
+    /**
+     * 处理子节点
+     */
+    function patchChildren(oldVNode: VNode, newVNode: VNode, container: CustomElement, anchor?: any) {
+        //获取旧节点的 children
+        const c1 = oldVNode && oldVNode.children
+        // 获取旧节点的 shapeFlag
+        const prevShapeFlag = oldVNode ? oldVNode.shapeFlag : 0
+        //获取新节点的 children
+        const c2 = newVNode && newVNode.children
+        const { shapeFlag } = newVNode
+
+        // 进行不同状态的判断
+
+        // 新节点的children是文本节点的分支
+        if (shapeFlag & ShapeFlags.TEXT_CHILDREN) {
+            // 如果旧节点的一个数组的，则将旧节点的 children 都卸载掉
+            //  - 这里在 h 函数中进行了 children 的参数处理，如果 h(div,null,vnode) 会包装为 h(div,null,[vnode])
+            //  - 所以如果不是数组，就是字符串
+            if (prevShapeFlag & ShapeFlags.ARRAY_CHILDREN) {
+                // todo 卸载旧节点的 children
+            }
+
+            // 如果新旧节点的字符串内容不一样，则直接更新文本内容
+            if (c1 !== c2) {
+                hostSetElementText(container, c2)
+            }
+        }
+        // 新节点的children不是一个文本节点的分支
+        else {
+            // 如果新节点和旧节点的children都是数组，则进行 diff 算法
+            if (prevShapeFlag & ShapeFlags.ARRAY_CHILDREN) {
+                if (shapeFlag & ShapeFlags.ARRAY_CHILDREN) {
+                    // todo diff 算法
+                }
+                // 新节点的 children 不是一个数组，也不是一个文本节点，则需要进行卸载，则卸载旧节点的 children
+                else {
+                    // todo 卸载旧节点的 children
+                }
+            }
+            // 旧节点的 children 也不是数组的处理
+            else {
+                // 检测旧节点的children是否是一个文本节点，如果是则清空
+                if (prevShapeFlag & ShapeFlags.TEXT_CHILDREN) {
+                    hostSetElementText(container, '')
+                }
+
+                // 如果新节点是一个数组，则将新节点的 children 进行单独的挂载
+                if (shapeFlag & ShapeFlags.ARRAY_CHILDREN) {
+                    // todo 挂载新节点的 children
+                }
+            }
+        }
+    }
+
+    /**
+     *
+     * @param oldVNode 旧的 vnode
+     * @param newVNode 新的 vnode
+     */
+    function patchElement(oldVNode: VNode, newVNode: VNode) {
+        // 将 dom 也保存到新的 vnode 中，方便后续对比
+        const el = (newVNode.el = oldVNode.el)
+
+        const oldProps = oldVNode.props || EMPTY_OBJ
+        const newProps = newVNode.props || EMPTY_OBJ
+
+        patchChildren(oldVNode, newVNode, el, null)
+
+        patchProps(el, newVNode, oldProps, newProps)
+    }
+
+    /**
      * 处理元素
      */
-    function processElement(oldValue: VNode | null, newValue: VNode, container: CustomElement, anchor?: any) {
-        if (oldValue === null) {
-            // 如果 oldValue 为 null，则表示需要执行挂载操作
-            mountElement(newValue, container, anchor)
+    function processElement(oldVNode: VNode | null, newVNode: VNode, container: CustomElement, anchor?: any) {
+        if (oldVNode === null) {
+            // 如果 oldVNode 为 null，则表示需要执行挂载操作
+            mountElement(newVNode, container, anchor)
+            // 将本次新的 vnode 作为下一次对比时旧的 vnode
+            container._vnode = newVNode
         } else {
-            // 如果 oldValue 不为 null，则表示需要执行更新操作
-            // todo updateElement
+            // 如果 oldVNode 不为 null，则表示需要执行更新操作
+            patchElement(oldVNode, newVNode)
         }
     }
 
@@ -129,9 +241,13 @@ function baseCreateRenderer(options: RendererOptions): baseCreateRendererReturn 
     function render(vnode: VNode, container: CustomElement) {
         // 如果 vnode 为 null，则表示需要执行卸载操作
         if (vnode == null) {
-            // todo 卸载容器里面的元素
+            // 卸载容器里面的元素
+            if (container._vnode) {
+                unmount(container._vnode)
+            }
         } else {
             // 如果不为 null，则进行 patch 操作
+            //  - 实际比对的是一个根节点下面的所有vnode
             patch(container._vnode || null, vnode, container)
         }
     }

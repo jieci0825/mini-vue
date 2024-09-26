@@ -19,6 +19,10 @@
 
         const vnode = h('h1', { class: 'container' }, 'hello mini-vue')
         render(vnode, appContainer)
+
+        window.destroy = () => {
+            render(null, appContainer)
+        }
     </script>
 </body>
 
