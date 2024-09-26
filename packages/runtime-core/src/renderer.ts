@@ -25,6 +25,14 @@ export interface RendererOptions {
      */
     createElement(tag: string): CustomElement
     /**
+     * 创建一个文本节点
+     */
+    createTextNode(text: string): Text
+    /**
+     * 创建一个注释节点
+     */
+    createComment(text: string): Comment
+    /**
      * 设置元素文本内容
      */
     setElementText(el: CustomElement, text: string): void
@@ -48,6 +56,8 @@ interface baseCreateRendererReturn {
 function baseCreateRenderer(options: RendererOptions): baseCreateRendererReturn {
     const {
         createElement: hostCreateElement,
+        createTextNode: hostCreateTextNode,
+        createComment: hostCreateComment,
         setElementText: hostSetElementText,
         insert: hostInsert,
         patchProp: hostPatchProp,
@@ -59,6 +69,43 @@ function baseCreateRenderer(options: RendererOptions): baseCreateRendererReturn 
      */
     function unmount(vnode: VNode) {
         hostRemove(vnode.el)
+    }
+
+    /**
+     * 更新Text
+     */
+    function updateTextNode(oldVNode: VNode, newVNode: VNode) {
+        // 节点进行复用，只需要更新文本内容即可
+        const el = (newVNode.el = oldVNode.el)
+        if (oldVNode.children !== newVNode.children) {
+            hostSetElementText(el, newVNode.children)
+        }
+    }
+
+    /**
+     * 挂载Text
+     */
+    function mountTextNode(vnode: VNode, container: CustomElement, anchor?: any) {
+        const textNode = (vnode.el = hostCreateTextNode(vnode.children) as unknown as Element)
+        hostInsert(textNode, container, anchor)
+    }
+
+    /**
+     * 更新Comment
+     */
+    function updateCommentNode(oldVNode: VNode, newVNode: VNode) {
+        const el = (newVNode.el = oldVNode.el)
+        if (oldVNode.children !== newVNode.children) {
+            hostSetElementText(el, newVNode.children)
+        }
+    }
+
+    /**
+     * 挂载Comment
+     */
+    function mountCommentNode(vnode: VNode, container: CustomElement, anchor?: any) {
+        const commentNode = (vnode.el = hostCreateComment(vnode.children) as unknown as Element)
+        hostInsert(commentNode, container, anchor)
     }
 
     /**
@@ -188,14 +235,36 @@ function baseCreateRenderer(options: RendererOptions): baseCreateRendererReturn 
     }
 
     /**
+     * 处理Text
+     */
+    function processText(oldVNode: VNode | null, newVNode: VNode, container: CustomElement, anchor?: any) {
+        // 旧节点不存在则直接挂载
+        if (oldVNode === null) {
+            mountTextNode(newVNode, container, anchor)
+        } else {
+            updateTextNode(oldVNode, newVNode)
+        }
+    }
+
+    /**
+     * 处理Comment
+     */
+    function processComment(oldVNode: VNode | null, newVNode: VNode, container: CustomElement, anchor?: any) {
+        // 旧节点不存在则直接挂载
+        if (oldVNode === null) {
+            mountCommentNode(newVNode, container, anchor)
+        } else {
+            updateCommentNode(oldVNode, newVNode)
+        }
+    }
+
+    /**
      * 处理元素
      */
     function processElement(oldVNode: VNode | null, newVNode: VNode, container: CustomElement, anchor?: any) {
         if (oldVNode === null) {
             // 如果 oldVNode 为 null，则表示需要执行挂载操作
             mountElement(newVNode, container, anchor)
-            // 将本次新的 vnode 作为下一次对比时旧的 vnode
-            container._vnode = newVNode
         } else {
             // 如果 oldVNode 不为 null，则表示需要执行更新操作
             patchElement(oldVNode, newVNode)
@@ -224,10 +293,10 @@ function baseCreateRenderer(options: RendererOptions): baseCreateRendererReturn 
 
         switch (type) {
             case Text:
-                // todo 处理文本节点
+                processText(oldVNode, newVNode, container, anchor)
                 break
             case Comment:
-                // todo 处理注释节点
+                processComment(oldVNode, newVNode, container, anchor)
                 break
             case Fragment:
                 // todo 处理片段节点
@@ -259,6 +328,8 @@ function baseCreateRenderer(options: RendererOptions): baseCreateRendererReturn 
             //  - 实际比对的是一个根节点下面的所有vnode
             patch(container._vnode || null, vnode, container)
         }
+        // 将本次的 vnode 作为下一次对比时旧的 vnode
+        container._vnode = vnode
     }
 
     return {
