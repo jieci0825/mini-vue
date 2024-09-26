@@ -14,6 +14,7 @@ export interface VNode {
     children: any
     shapeFlag: number
     el: any
+    key: string | number | null
 }
 
 export const isVNode = (vnode: any) => {
@@ -48,7 +49,8 @@ function createBaseVNode(type: any, props: any, children: any, shapeFlag: number
         props,
         children,
         shapeFlag,
-        el: null
+        el: null,
+        key: null
     }
 
     normalizeChildren(vnode, children)
@@ -83,4 +85,11 @@ export function normalizeChildren(vnode: VNode, children: any) {
     vnode.children = children
     // 将之前的 shapeFlag 和新的 type 进行或运算，即合并起来，得到新的 shapeFlag
     vnode.shapeFlag |= type
+}
+
+/**
+ * 判断两个节点是否相同
+ */
+export function isSameVNodeType(n1: VNode, n2: VNode) {
+    return n1.type === n2.type && n1.key === n2.key
 }

@@ -1,5 +1,5 @@
 import { ShapeFlags } from 'packages/shared/src/shapFlags'
-import { Comment, Fragment, Text, VNode } from './vnode'
+import { Comment, Fragment, isSameVNodeType, Text, VNode } from './vnode'
 import { patchProp } from 'packages/runtime-dom/src/patchProp'
 import { EMPTY_OBJ } from '@vue/shared'
 
@@ -28,6 +28,10 @@ export interface RendererOptions {
      * 设置元素文本内容
      */
     setElementText(el: CustomElement, text: string): void
+    /**
+     * 移除元素
+     */
+    remove(el: CustomElement): void
 }
 
 /**
@@ -46,17 +50,15 @@ function baseCreateRenderer(options: RendererOptions): baseCreateRendererReturn 
         createElement: hostCreateElement,
         setElementText: hostSetElementText,
         insert: hostInsert,
-        patchProp: hostPatchProp
+        patchProp: hostPatchProp,
+        remove: hostRemove
     } = options
 
     /**
      * 卸载元素
      */
     function unmount(vnode: VNode) {
-        // todo 简单处理
-        if (vnode.el) {
-            vnode.el.remove()
-        }
+        hostRemove(vnode.el)
     }
 
     /**
@@ -209,6 +211,13 @@ function baseCreateRenderer(options: RendererOptions): baseCreateRendererReturn 
      */
     function patch(oldVNode: VNode | null, newVNode: VNode, container: CustomElement, anchor?: any) {
         if (oldVNode === newVNode) return
+
+        // 若旧节点存在，且两个节点类型不一致，则卸载旧节点，在挂载新节点
+        if (oldVNode && !isSameVNodeType(oldVNode, newVNode)) {
+            unmount(oldVNode)
+            // 卸载后将 oldVNode 设置为 null，后续就会执行挂载操作
+            oldVNode = null
+        }
 
         // 根据 type 来判断如何处理
         const { type, shapeFlag } = newVNode
