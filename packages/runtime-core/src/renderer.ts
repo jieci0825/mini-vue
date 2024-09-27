@@ -1,7 +1,10 @@
 import { ShapeFlags } from 'packages/shared/src/shapFlags'
 import { Comment, Fragment, isSameVNodeType, Text, VNode } from './vnode'
-import { patchProp } from 'packages/runtime-dom/src/patchProp'
 import { EMPTY_OBJ } from '@vue/shared'
+import { type ComponentInstance, createComponentInstance, setupComponent } from './component'
+import { ReactiveEffect } from 'packages/reactivity/src/effect'
+import { queuePreFlushCbs } from './scheduler'
+import { renderComponentRoot } from './componentRenderUtils'
 
 export interface CustomElement extends Element {
     _vnode?: VNode
@@ -74,7 +77,7 @@ function baseCreateRenderer(options: RendererOptions): baseCreateRendererReturn 
     /**
      * 更新Text
      */
-    function updateTextNode(oldVNode: VNode, newVNode: VNode) {
+    function patchTextNode(oldVNode: VNode, newVNode: VNode) {
         // 节点进行复用，只需要更新文本内容即可
         const el = (newVNode.el = oldVNode.el)
         if (oldVNode.children !== newVNode.children) {
@@ -93,7 +96,7 @@ function baseCreateRenderer(options: RendererOptions): baseCreateRendererReturn 
     /**
      * 更新Comment
      */
-    function updateCommentNode(oldVNode: VNode, newVNode: VNode) {
+    function patchCommentNode(oldVNode: VNode, newVNode: VNode) {
         const el = (newVNode.el = oldVNode.el)
         if (oldVNode.children !== newVNode.children) {
             hostSetElementText(el, newVNode.children)
@@ -133,6 +136,53 @@ function baseCreateRenderer(options: RendererOptions): baseCreateRendererReturn 
         }
         // 5、插入
         hostInsert(el, container, anchor)
+    }
+
+    /**
+     * 挂载组件
+     */
+    function mountComponent(initialVNode: VNode, container: CustomElement, anchor?: any) {
+        const instance = (initialVNode.component = createComponentInstance(initialVNode))
+
+        // 在 setupComponent 主要进行 render 函数的绑定
+        setupComponent(instance)
+
+        // 触发实际的渲染
+        setupRenderEffect(instance, initialVNode, container, anchor)
+    }
+
+    function setupRenderEffect(
+        instance: ComponentInstance,
+        initialVNode: VNode,
+        container: CustomElement,
+        anchor?: any
+    ) {
+        // 组件的更新函数-- 用来触发组件的更新
+        const componentUpdateFn = () => {
+            // 为 false 表示初次挂载
+            if (!instance.isMounted) {
+                // 得到组件的渲染函数返回的 VNode
+                //  - 这里是组件对象里面的 render 而非是渲染器里面的 render
+                const subTree = (instance.subTree = renderComponentRoot(instance))
+                patch(null, subTree, container, anchor)
+                initialVNode.el = subTree.el
+                instance.isMounted = true
+            } else {
+                // todo 更新
+            }
+        }
+
+        // 使用 effect 来包裹组件的更新函数
+        const effect = (instance.effect = new ReactiveEffect(componentUpdateFn, () => {
+            queuePreFlushCbs(update)
+        }))
+
+        function update() {
+            effect.run()
+        }
+        instance.update = update
+        // 手动触发第一次
+        update()
     }
 
     /**
@@ -242,7 +292,7 @@ function baseCreateRenderer(options: RendererOptions): baseCreateRendererReturn 
         if (oldVNode === null) {
             mountTextNode(newVNode, container, anchor)
         } else {
-            updateTextNode(oldVNode, newVNode)
+            patchTextNode(oldVNode, newVNode)
         }
     }
 
@@ -254,7 +304,7 @@ function baseCreateRenderer(options: RendererOptions): baseCreateRendererReturn 
         if (oldVNode === null) {
             mountCommentNode(newVNode, container, anchor)
         } else {
-            updateCommentNode(oldVNode, newVNode)
+            patchCommentNode(oldVNode, newVNode)
         }
     }
 
@@ -268,6 +318,18 @@ function baseCreateRenderer(options: RendererOptions): baseCreateRendererReturn 
         } else {
             // 如果 oldVNode 不为 null，则表示需要执行更新操作
             patchElement(oldVNode, newVNode)
+        }
+    }
+
+    /**
+     * 处理组件
+     */
+    function processComponent(oldVNode: VNode | null, newVNode: VNode, container: CustomElement, anchor?: any) {
+        if (oldVNode === null) {
+            // 如果 oldVNode 为 null，则表示需要执行挂载操作
+            mountComponent(newVNode, container, anchor)
+        } else {
+            // todo patch
         }
     }
 
@@ -307,6 +369,7 @@ function baseCreateRenderer(options: RendererOptions): baseCreateRendererReturn 
                     processElement(oldVNode, newVNode, container, anchor)
                 } else if (shapeFlag & ShapeFlags.STATEFUL_COMPONENT) {
                     // todo 处理组件
+                    processComponent(oldVNode, newVNode, container, anchor)
                 }
         }
     }

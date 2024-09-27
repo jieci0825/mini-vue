@@ -15,6 +15,7 @@ export interface VNode {
     shapeFlag: number
     el: any
     key: string | number | null
+    component: any
 }
 
 export const isVNode = (vnode: any) => {
@@ -51,7 +52,8 @@ function createBaseVNode(type: any, props: any, children: any, shapeFlag: number
         children,
         shapeFlag,
         el: null,
-        key: null
+        key: null,
+        component: null
     }
 
     normalizeChildren(vnode, children)
