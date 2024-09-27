@@ -22,6 +22,15 @@
             }
         }, '增强的 style')
         render(vnodeEl, document.querySelector('#app'))
+
+        window.update = () => {
+            const vnodeEl = h('div', {
+                style: {
+                    color: 'blue',
+                }
+            }, '增强的 style')
+            render(vnodeEl, document.querySelector('#app'))
+        }
     </script>
 </body>
 

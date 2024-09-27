@@ -5,7 +5,7 @@ export function patchProp(el: Element, key: string, prevValue: any, nextValue: a
     if (key === 'class') {
         patchClass(el, nextValue)
     } else if (key === 'style') {
-        patchStyle(el, nextValue)
+        patchStyle(el, prevValue, nextValue)
     } else if (isOn(key)) {
         // todo 处理事件
     } else if (shouldSetAsProp(el, key)) {
