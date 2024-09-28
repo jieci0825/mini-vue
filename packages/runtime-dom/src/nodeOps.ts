@@ -18,7 +18,7 @@ export const nodeOps = {
     createComment: (comment: string) => {
         return doc.createComment(comment)
     },
-    setElementText: (el: Element, text: string) => {
+    setText: (el: Element, text: string) => {
         el.textContent = text
     },
     remove: (child: Element) => {

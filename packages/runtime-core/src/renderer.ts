@@ -18,7 +18,7 @@ export interface RendererOptions {
     /**
      * 未指定的 element 设置 text
      */
-    setElementText(el: CustomElement, text: string): void
+    setText(el: CustomElement, text: string): void
     /**
      * 将一个元素插入到父元素中，anchor 表示插入的位置，即：锚点
      */
@@ -38,7 +38,7 @@ export interface RendererOptions {
     /**
      * 设置元素文本内容
      */
-    setElementText(el: CustomElement, text: string): void
+    setText(el: CustomElement, text: string): void
     /**
      * 移除元素
      */
@@ -61,7 +61,7 @@ function baseCreateRenderer(options: RendererOptions): baseCreateRendererReturn 
         createElement: hostCreateElement,
         createTextNode: hostCreateTextNode,
         createComment: hostCreateComment,
-        setElementText: hostSetElementText,
+        setText: hostSetText,
         insert: hostInsert,
         patchProp: hostPatchProp,
         remove: hostRemove
@@ -81,7 +81,7 @@ function baseCreateRenderer(options: RendererOptions): baseCreateRendererReturn 
         // 节点进行复用，只需要更新文本内容即可
         const el = (newVNode.el = oldVNode.el)
         if (oldVNode.children !== newVNode.children) {
-            hostSetElementText(el, newVNode.children)
+            hostSetText(el, newVNode.children)
         }
     }
 
@@ -99,7 +99,7 @@ function baseCreateRenderer(options: RendererOptions): baseCreateRendererReturn 
     function patchCommentNode(oldVNode: VNode, newVNode: VNode) {
         const el = (newVNode.el = oldVNode.el)
         if (oldVNode.children !== newVNode.children) {
-            hostSetElementText(el, newVNode.children)
+            hostSetText(el, newVNode.children)
         }
     }
 
@@ -121,7 +121,7 @@ function baseCreateRenderer(options: RendererOptions): baseCreateRendererReturn 
         const el = (vnode.el = hostCreateElement(type))
         // 2、处理 children 为文本节点的情况
         if (shapeFlag & ShapeFlags.TEXT_CHILDREN) {
-            hostSetElementText(el, vnode.children)
+            hostSetText(el, vnode.children)
         }
         // 3、处理 children 为数组的情况，也只会为数组，就算值传低了一个虚拟节点，也会被封装成数组，在 h 函数中处理了
         else if (shapeFlag & ShapeFlags.ARRAY_CHILDREN) {
@@ -239,7 +239,7 @@ function baseCreateRenderer(options: RendererOptions): baseCreateRendererReturn 
 
             // 如果新旧节点的字符串内容不一样，则直接更新文本内容
             if (c1 !== c2) {
-                hostSetElementText(container, c2)
+                hostSetText(container, c2)
             }
         }
         // 新节点的children不是一个文本节点的分支
@@ -258,7 +258,7 @@ function baseCreateRenderer(options: RendererOptions): baseCreateRendererReturn 
             else {
                 // 检测旧节点的children是否是一个文本节点，如果是则清空
                 if (prevShapeFlag & ShapeFlags.TEXT_CHILDREN) {
-                    hostSetElementText(container, '')
+                    hostSetText(container, '')
                 }
 
                 // 如果新节点是一个数组，则将新节点的 children 进行单独的挂载
