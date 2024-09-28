@@ -1,0 +1,5 @@
+export { patchAttr } from './attrs'
+export { patchClass } from './class'
+export { patchStyle } from './style'
+export { patchDOMProp } from './props'
+export { patchEvent } from './event'

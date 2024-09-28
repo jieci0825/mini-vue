@@ -1,5 +1,5 @@
 import { isOn } from '@vue/shared'
-import { patchAttr, patchClass, patchStyle, patchDOMProp } from './modules'
+import { patchAttr, patchClass, patchStyle, patchDOMProp, patchEvent } from './modules'
 
 export function patchProp(el: Element, key: string, prevValue: any, nextValue: any) {
     if (key === 'class') {
@@ -7,7 +7,7 @@ export function patchProp(el: Element, key: string, prevValue: any, nextValue: a
     } else if (key === 'style') {
         patchStyle(el, prevValue, nextValue)
     } else if (isOn(key)) {
-        // todo 处理事件
+        patchEvent(el, key, prevValue, nextValue)
     } else if (shouldSetAsProp(el, key)) {
         patchDOMProp(el, key, nextValue)
     } else {
