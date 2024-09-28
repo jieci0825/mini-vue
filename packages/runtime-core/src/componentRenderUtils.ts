@@ -4,13 +4,14 @@ import { isObject } from '@vue/shared'
 import { createVNode, Text } from './vnode'
 
 export function renderComponentRoot(instance: ComponentInstance) {
-    const { vnode, render } = instance
+    const { vnode, render, data } = instance
 
     let result
 
     try {
         if (vnode.shapeFlag & ShapeFlags.STATEFUL_COMPONENT) {
-            result = normalizeVNode(render())
+            // 改变 this 指向，让模板内部的数据可以通过 this 访问到
+            result = normalizeVNode(render.call(data))
         }
     } catch (error) {
         console.error(error)

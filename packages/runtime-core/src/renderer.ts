@@ -157,14 +157,16 @@ function baseCreateRenderer(options: RendererOptions): baseCreateRendererReturn 
         container: CustomElement,
         anchor?: any
     ) {
-        // 组件的更新函数-- 用来触发组件的更新
+        // 组件的更新函数--组件 render 函数内数据变化，触发更新
         const componentUpdateFn = () => {
             // 为 false 表示初次挂载
             if (!instance.isMounted) {
                 // 得到组件的渲染函数返回的 VNode
                 //  - 这里是组件对象里面的 render 而非是渲染器里面的 render
                 const subTree = (instance.subTree = renderComponentRoot(instance))
+                // 执行挂载
                 patch(null, subTree, container, anchor)
+                // 初始化数据
                 initialVNode.el = subTree.el
                 instance.isMounted = true
             } else {
@@ -344,6 +346,7 @@ function baseCreateRenderer(options: RendererOptions): baseCreateRendererReturn 
         if (oldVNode === newVNode) return
 
         // 若旧节点存在，且两个节点类型不一致，则卸载旧节点，在挂载新节点
+        //  - 如果是组件，每次都是不同的组件对象，type 就是 render，所以类型一定不一致
         if (oldVNode && !isSameVNodeType(oldVNode, newVNode)) {
             unmount(oldVNode)
             // 卸载后将 oldVNode 设置为 null，后续就会执行挂载操作

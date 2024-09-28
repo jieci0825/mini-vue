@@ -1,0 +1,34 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Document</title>
+</head>
+
+<body>
+    <div id="app"></div>
+
+    <script src="../../dist/mini-vue.js"></script>
+    <script>
+
+        const { h, render } = MiniVue
+
+        const appContainer = document.getElementById('app')
+
+        const vnode = h('textarea', {
+            class: 'test-class',
+            name: 'jcTextarea',
+            value: 'textarea value',
+            rows: 5,
+            type: 'text',
+            disabled: true,
+            'data-role': 'jc'
+        })
+        render(vnode, appContainer)
+
+    </script>
+</body>
+
+</html>

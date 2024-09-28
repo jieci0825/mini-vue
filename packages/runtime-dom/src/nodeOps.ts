@@ -2,7 +2,11 @@ const doc = document
 
 export const nodeOps = {
     insert: (child: any, parent: Element, anchor: any) => {
-        parent.insertBefore(child, anchor || null)
+        if (anchor) {
+            parent.insertBefore(child, anchor)
+        } else {
+            parent.appendChild(child)
+        }
     },
     createElement: (tag: string) => {
         const el = doc.createElement(tag)

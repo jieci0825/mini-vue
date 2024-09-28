@@ -15,10 +15,18 @@
         const { h, render } = MiniVue
 
         const comp = {
+            data() {
+                return {
+                    msg: '大河之剑天上来'
+                }
+            },
+
             render() {
-                return h('div', 'hello component')
+                return h('div', this.msg)
             }
+
         }
+
         const vnode = h(comp)
         render(vnode, document.querySelector('#app'))
     </script>

@@ -1,7 +1,7 @@
 import { ShapeFlags } from 'packages/shared/src/shapFlags'
 import { IsVNode } from './constants'
 import { isArray, isFunction, isObject, isString } from '@vue/shared'
-import { normalizeClass, normalizeStyle } from './normalizeProp'
+import { normalizeClass } from './normalizeProp'
 
 export const Text = Symbol('Text')
 export const Comment = Symbol('Comment')
@@ -25,9 +25,8 @@ export const isVNode = (vnode: any) => {
 export function createVNode(type: any, props: any, children: any): VNode {
     // 处理 props
     if (props) {
-        const { class: klass, style } = props
+        const { class: klass } = props
         klass && (props.class = normalizeClass(klass))
-        style && (props.style = normalizeStyle(style))
     }
 
     // 处理 shapeFlag

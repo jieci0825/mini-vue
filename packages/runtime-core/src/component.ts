@@ -1,5 +1,7 @@
+import { isObject } from '@vue/shared'
 import { CustomElement } from './renderer'
 import { VNode } from './vnode'
+import { reactive } from '@vue/reactivity'
 
 export interface ComponentInstance {
     uid: number
@@ -10,6 +12,7 @@ export interface ComponentInstance {
     update: any
     render: any
     isMounted: boolean
+    data: any
 }
 
 let uid = 0
@@ -28,7 +31,8 @@ export function createComponentInstance(vnode: VNode): ComponentInstance {
         effect: null, // 组件渲染effect
         update: null, // 组件更新effect
         render: null, // 组件渲染函数
-        isMounted: false // 组件是否挂载
+        isMounted: false, // 组件是否挂载
+        data: null
     }
 
     return instance
@@ -50,4 +54,20 @@ function finishComponentSetup(instance: ComponentInstance) {
     // 获取实例的 type，在 shapeFlag 为 组件时，type 为组件的对象
     const Component = instance.type
     instance.render = Component.render
+
+    applyOptions(instance)
+}
+
+function applyOptions(instance: ComponentInstance) {
+    // 提取组件对象中的 data 属性
+    const { data: dataOptions } = instance.type
+
+    // 如果 data 属性存在，即为一个函数，直接触发
+    if (dataOptions) {
+        const data = dataOptions()
+        if (isObject(data)) {
+            // 如果是一个对象，则将其用 reactive 进行包裹，进行响应式处理
+            instance.data = reactive(data)
+        }
+    }
 }

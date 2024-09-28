@@ -22,15 +22,15 @@ export function normalizeClass(value: any): string {
     return res.trim()
 }
 
-export function normalizeStyle(value: any): string {
-    let res = ''
-    if (isString(value)) {
-        res = value
-    } else if (isObject(value)) {
-        for (const key in value) {
-            const val = value[key]
-            res += `${camelToKebab(key)}: ${val}; `
-        }
-    }
-    return res.trim()
-}
+// export function normalizeStyle(value: any): string {
+//     let res = ''
+//     if (isString(value)) {
+//         res = value
+//     } else if (isObject(value)) {
+//         for (const key in value) {
+//             const val = value[key]
+//             res += `${camelToKebab(key)}: ${val}; `
+//         }
+//     }
+//     return res.trim()
+// }

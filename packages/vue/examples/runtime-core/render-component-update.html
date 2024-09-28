@@ -19,8 +19,21 @@
                 return h('div', 'hello component')
             }
         }
+
         const vnode = h(comp)
+
         render(vnode, document.querySelector('#app'))
+
+        window.update = () => {
+            const comp = {
+                render() {
+                    return h('div', 'update hello component')
+                }
+            }
+            const vnode = h(comp)
+            render(vnode, document.querySelector('#app'))
+        }
+
     </script>
 </body>
 
