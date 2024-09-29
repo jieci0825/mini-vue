@@ -4,7 +4,7 @@ import { EMPTY_OBJ } from '@vue/shared'
 import { type ComponentInstance, createComponentInstance, setupComponent } from './component'
 import { ReactiveEffect } from 'packages/reactivity/src/effect'
 import { queuePreFlushCbs } from './scheduler'
-import { renderComponentRoot } from './componentRenderUtils'
+import { normalizeVNode, renderComponentRoot } from './componentRenderUtils'
 
 export interface CustomElement extends Element {
     _vnode?: VNode
@@ -112,6 +112,20 @@ function baseCreateRenderer(options: RendererOptions): baseCreateRendererReturn 
     }
 
     /**
+     * 挂载 children
+     */
+    function mountChildren(children: VNode[], container: CustomElement, anchor?: any) {
+        // children 可能是数组也可能是字符串
+        if (children && children.length) {
+            for (let child of children) {
+                // 标准化 vnode，如果是一个 string 也会被封装成 Text 类型的 vnode
+                child = normalizeVNode(child)
+                patch(null, child, container, anchor)
+            }
+        }
+    }
+
+    /**
      * 挂载元素
      */
     function mountElement(vnode: VNode, container: CustomElement, anchor?: any) {
@@ -145,9 +159,10 @@ function baseCreateRenderer(options: RendererOptions): baseCreateRendererReturn 
         const instance = (initialVNode.component = createComponentInstance(initialVNode))
 
         // 在 setupComponent 主要进行 render 函数的绑定
+        //  - 并且会在里面进行组件实例化和生命周期函数的处理等
         setupComponent(instance)
 
-        // 触发实际的渲染
+        // 触发实际的渲染，即render函数执行
         setupRenderEffect(instance, initialVNode, container, anchor)
     }
 
@@ -161,12 +176,30 @@ function baseCreateRenderer(options: RendererOptions): baseCreateRendererReturn 
         const componentUpdateFn = () => {
             // 为 false 表示初次挂载
             if (!instance.isMounted) {
+                // 从这里将 beforeMount 和 mounted 函数取出进行调用
+                const { beforeMount, mounted } = instance
+
+                // 在组件被挂载之前调用
+                if (beforeMount) {
+                    // 由于之前这里被我们处理成了数组，所以这里需要调用数组中的每一个函数
+                    for (const fn of beforeMount) {
+                        fn.call(instance)
+                    }
+                }
+
                 // 得到组件的渲染函数返回的 VNode
                 //  - 这里是组件对象里面的 render 而非是渲染器里面的 render
                 const subTree = (instance.subTree = renderComponentRoot(instance))
                 // 执行挂载
                 patch(null, subTree, container, anchor)
-                // 初始化数据
+
+                // 在组件被挂载之后调用
+                if (mounted) {
+                    for (const fn of mounted) {
+                        fn.call(instance)
+                    }
+                }
+
                 initialVNode.el = subTree.el
                 instance.isMounted = true
             } else {
@@ -311,6 +344,18 @@ function baseCreateRenderer(options: RendererOptions): baseCreateRendererReturn 
     }
 
     /**
+     * 处理 Fragment
+     */
+    function processFragment(oldVNode: VNode | null, newVNode: VNode, container: CustomElement, anchor?: any) {
+        // 旧节点不存在则直接挂载
+        if (oldVNode === null) {
+            mountChildren(newVNode.children, container, anchor)
+        } else {
+            patchChildren(oldVNode, newVNode, container, anchor)
+        }
+    }
+
+    /**
      * 处理元素
      */
     function processElement(oldVNode: VNode | null, newVNode: VNode, container: CustomElement, anchor?: any) {
@@ -364,14 +409,13 @@ function baseCreateRenderer(options: RendererOptions): baseCreateRendererReturn 
                 processComment(oldVNode, newVNode, container, anchor)
                 break
             case Fragment:
-                // todo 处理片段节点
+                processFragment(oldVNode, newVNode, container, anchor)
                 break
             default:
                 // 如果都不是，则分为元素和组件来处理
                 if (shapeFlag & ShapeFlags.ELEMENT) {
                     processElement(oldVNode, newVNode, container, anchor)
                 } else if (shapeFlag & ShapeFlags.STATEFUL_COMPONENT) {
-                    // todo 处理组件
                     processComponent(oldVNode, newVNode, container, anchor)
                 }
         }
