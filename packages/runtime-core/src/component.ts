@@ -82,7 +82,7 @@ function applyOptions(instance: ComponentInstance) {
 
     // 初始化
     if (beforeCreate) {
-        callHook(beforeCreate)
+        callHook(beforeCreate, instance.data)
     }
 
     // 如果 data 属性存在，即为一个函数，直接触发
@@ -97,11 +97,12 @@ function applyOptions(instance: ComponentInstance) {
     // 等待 data 处理完成之后，再执行 created 钩子函数
     //  - 这里 beforeCreate 和 created 钩子函数的执行无需经过 effect，所以直接调用即可
     if (created) {
-        callHook(created)
+        callHook(created, instance.data)
     }
 
     function registerLifecycleHooks(register: Function, hook?: Function) {
-        register(hook, instance)
+        // 如果 hook 存在，则将其 this 绑定到 instance.data 上，
+        register(hook?.bind(instance.data), instance)
     }
 
     // 注册钩子函数
@@ -109,6 +110,6 @@ function applyOptions(instance: ComponentInstance) {
     registerLifecycleHooks(onMounted, mounted)
 }
 
-function callHook(hook: Function) {
-    hook()
+function callHook(hook: Function, proxy: any) {
+    hook.bind(proxy)()
 }

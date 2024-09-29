@@ -183,7 +183,7 @@ function baseCreateRenderer(options: RendererOptions): baseCreateRendererReturn 
                 if (beforeMount) {
                     // 由于之前这里被我们处理成了数组，所以这里需要调用数组中的每一个函数
                     for (const fn of beforeMount) {
-                        fn.call(instance)
+                        fn()
                     }
                 }
 
@@ -196,7 +196,7 @@ function baseCreateRenderer(options: RendererOptions): baseCreateRendererReturn 
                 // 在组件被挂载之后调用
                 if (mounted) {
                     for (const fn of mounted) {
-                        fn.call(instance)
+                        fn()
                     }
                 }
 
