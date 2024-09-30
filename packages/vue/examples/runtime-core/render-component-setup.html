@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Document</title>
+</head>
+
+<body>
+    <div id="app"></div>
+
+    <script src="../../dist/mini-vue.js"></script>
+    <script>
+        const { h, render, ref } = MiniVue
+
+        const comp = {
+            setup() {
+                const msg = ref('hello setup')
+
+                window.update = () => {
+                    msg.value = '欲买桂花同载酒，终不似，少年游'
+                }
+
+                return () => {
+                    return h('h1', msg.value)
+                }
+            }
+        }
+        const vnode = h(comp)
+        render(vnode, document.querySelector('#app'))
+    </script>
+</body>
+
+</html>

@@ -1,5 +1,4 @@
-import { isObject } from '@vue/shared'
-import { CustomElement } from './renderer'
+import { isFunction, isObject } from '@vue/shared'
 import { VNode } from './vnode'
 import { reactive } from '@vue/reactivity'
 import { onBeforeMount, onMounted } from './apiLifecycle'
@@ -66,6 +65,27 @@ export function setupComponent(instance: ComponentInstance) {
 }
 
 function setupStatefulComponent(instance: ComponentInstance) {
+    const Component = instance.type
+    const { setup } = Component
+    // 如果存在 setup 函数，则表示认为是 composition api
+    if (isFunction(setup)) {
+        const setupResult = setup()
+        handleSetupResult(instance, setupResult)
+    }
+    // 不存在则认为是 options api
+    else {
+        finishComponentSetup(instance)
+    }
+}
+
+function handleSetupResult(instance: ComponentInstance, setupResult: any) {
+    // todo 暂时只处理 setup 返回值为函数情况
+    if (isFunction(setupResult)) {
+        // 如果 setup 返回值为函数，则将其作为 render 函数
+        instance.render = setupResult
+    }
+
+    // 触发 finishComponentSetup
     finishComponentSetup(instance)
 }
 
@@ -73,7 +93,11 @@ function setupStatefulComponent(instance: ComponentInstance) {
 function finishComponentSetup(instance: ComponentInstance) {
     // 获取实例的 type，在 shapeFlag 为 组件时，type 为组件的对象
     const Component = instance.type
-    instance.render = Component.render
+
+    // 如果实例上没有 render 函数，则从组件对象中获取 render 属性，并赋值给实例
+    if (!instance.render) {
+        instance.render = Component.render
+    }
 
     applyOptions(instance)
 }
