@@ -14,6 +14,7 @@ export interface ComponentInstance {
     render: any
     isMounted: boolean
     data: any
+    next: any
     [LifecycleHooks.BEFORE_CREATE]: any
     [LifecycleHooks.CREATED]: any
     [LifecycleHooks.BEFORE_MOUNT]: any
@@ -46,6 +47,7 @@ export function createComponentInstance(vnode: VNode): ComponentInstance {
         render: null, // 组件渲染函数
         isMounted: false, // 组件是否挂载
         data: null,
+        next: null,
         [LifecycleHooks.BEFORE_CREATE]: null,
         [LifecycleHooks.CREATED]: null,
         [LifecycleHooks.BEFORE_MOUNT]: null,

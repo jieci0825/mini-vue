@@ -1,6 +1,6 @@
 import { ShapeFlags } from 'packages/shared/src/shapFlags'
 import { Comment, Fragment, isSameVNodeType, Text, VNode } from './vnode'
-import { EMPTY_OBJ } from '@vue/shared'
+import { EMPTY_OBJ, isFunction } from '@vue/shared'
 import { type ComponentInstance, createComponentInstance, setupComponent } from './component'
 import { ReactiveEffect } from 'packages/reactivity/src/effect'
 import { queuePreFlushCbs } from './scheduler'
@@ -183,27 +183,45 @@ function baseCreateRenderer(options: RendererOptions): baseCreateRendererReturn 
                 if (beforeMount) {
                     // 由于之前这里被我们处理成了数组，所以这里需要调用数组中的每一个函数
                     for (const fn of beforeMount) {
-                        fn()
+                        isFunction(fn) && fn()
                     }
                 }
 
                 // 得到组件的渲染函数返回的 VNode
                 //  - 这里是组件对象里面的 render 而非是渲染器里面的 render
-                const subTree = (instance.subTree = renderComponentRoot(instance))
+                const subTree = renderComponentRoot(instance)
                 // 执行挂载
                 patch(null, subTree, container, anchor)
 
                 // 在组件被挂载之后调用
                 if (mounted) {
                     for (const fn of mounted) {
-                        fn()
+                        isFunction(fn) && fn()
                     }
                 }
 
+                instance.subTree = subTree
                 initialVNode.el = subTree.el
                 instance.isMounted = true
             } else {
-                // todo 更新
+                let { next, vnode } = instance
+                // 这里的 vnode 是组件上一次挂载时生成的 VNode，这里不需要再重新生成，只需要更新即可
+                //  - 所以 next 直接复用 vnode 即可
+                if (!next) {
+                    next = vnode
+                }
+
+                // 重新执行组件的 render 函数，得到新的
+                const nextTree = renderComponentRoot(instance)
+                // 上一次组件的 subTree 作为旧的 vnode
+                const prevTree = instance.subTree
+                // 重新将本次的 nextTree 赋值给 subTree，作为下一次更新的旧的 vnode
+                instance.subTree = nextTree
+
+                // 更新
+                patch(prevTree, nextTree, container)
+
+                next.el = nextTree.el
             }
         }
 
