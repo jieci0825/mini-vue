@@ -18,11 +18,11 @@
             data() {
                 return {
                     msg: '大河之剑天上来',
-                    count: 0
+                    count: 0,
                 }
             },
-            render() {
-                return h('div', 'hello component')
+            render(data) {
+                return h('div', this.msg)
             },
             beforeCreate() {
                 console.log('beforeCreate', this)
