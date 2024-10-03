@@ -51,7 +51,7 @@ function createBaseVNode(type: any, props: any, children: any, shapeFlag: number
         children,
         shapeFlag,
         el: null,
-        key: null,
+        key: props?.key ?? null,
         component: null
     }
 

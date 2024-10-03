@@ -139,7 +139,8 @@ function baseCreateRenderer(options: RendererOptions): baseCreateRendererReturn 
         }
         // 3、处理 children 为数组的情况，也只会为数组，就算值传低了一个虚拟节点，也会被封装成数组，在 h 函数中处理了
         else if (shapeFlag & ShapeFlags.ARRAY_CHILDREN) {
-            // todo 处理当前挂载元素子节点为数组的情况
+            // 这里直接挂载子节点即可
+            mountChildren(vnode.children, el, anchor)
         }
         // 4、设置元素属性
         if (props) {
@@ -298,7 +299,7 @@ function baseCreateRenderer(options: RendererOptions): baseCreateRendererReturn 
             // 如果新节点和旧节点的children都是数组，则进行 diff 算法
             if (prevShapeFlag & ShapeFlags.ARRAY_CHILDREN) {
                 if (shapeFlag & ShapeFlags.ARRAY_CHILDREN) {
-                    // todo diff 算法
+                    patchKeyChildren(c1, c2, container, anchor)
                 }
                 // 新节点的 children 不是一个数组，也不是一个文本节点，则需要进行卸载，则卸载旧节点的 children
                 else {
@@ -314,10 +315,101 @@ function baseCreateRenderer(options: RendererOptions): baseCreateRendererReturn 
 
                 // 如果新节点是一个数组，则将新节点的 children 进行单独的挂载
                 if (shapeFlag & ShapeFlags.ARRAY_CHILDREN) {
-                    // todo 挂载新节点的 children
+                    mountChildren(c2, container, anchor)
                 }
             }
         }
+    }
+
+    /**
+     * 处理虚拟节点有key时，进行 diff 算法
+     */
+    function patchKeyChildren(c1: VNode[], c2: VNode[], container: CustomElement, parentAnchor: any) {
+        const oldChildren = c1 // 旧子节点数组
+        const newChildren = c2 // 新子节点数组
+
+        let i = 0 // 当前遍历的索引
+        let oldIndexEnd = oldChildren.length - 1 // 旧节点的最后一个索引
+        let newIndexEnd = newChildren.length - 1 // 新节点的最后一个索引
+
+        // 遍历新节点，进行 diff 算法
+        // ***** step1：自前向后 *****
+        // (a b) c d
+        // (a b) d e f
+        // 这里只处理新旧节点一致的更新，卸载和创建不负责
+        while (i <= oldIndexEnd && i <= newIndexEnd) {
+            const prevChild = oldChildren[i] // 旧节点
+            const nextChild = normalizeVNode(newChildren[i]) // 新节点-新节点可能会更换为文本节点，所以将节点标准化
+            // 如果新旧节点不相等，则进行 patch，否则直接跳过
+            if (isSameVNodeType(prevChild, nextChild)) {
+                // 一样的vnode，不需要传入锚点，只需要更新即可
+                patch(prevChild, nextChild, container, null)
+            } else {
+                break
+            }
+            i++
+        }
+
+        // ***** step2：自后向前 *****
+        // d (b c)
+        // d e (b c)
+        // 经过 step 的步骤之后，i 已经从 0 变为了一个头部对比结束的索引值，也一直只处理一样节点的更新
+        // 所以从尾部开始对比的时候，不在对 i 进行增加，改为每次减少 oldIndexEnd 和 newIndexEnd
+        while (i <= oldIndexEnd && i <= newIndexEnd) {
+            const prevChild = oldChildren[oldIndexEnd] // 旧节点
+            const nextChild = normalizeVNode(newChildren[newIndexEnd]) // 新节点
+            if (isSameVNodeType(prevChild, nextChild)) {
+                patch(prevChild, nextChild, container, null)
+            } else {
+                break
+            }
+            oldIndexEnd--
+            newIndexEnd--
+        }
+
+        /****************** 处理完头部和尾部之后，就处理中间部分，中间部分分为了三种情况 ******************/
+
+        // ***** step3：前面两步完成了前后对比时新旧节点一致时的更新，这一步处理新节点多余旧节点的时候 *****
+        // (a b)
+        // (a b) c
+        // 自前向后对比后的值：i = 2, oldIndexEnd = 1, newIndexEnd = 2
+        // (a b)
+        // c (a b)
+        // 自后向前对比后的值：i = 0, oldIndexEnd = -1, newIndexEnd = 0
+        // 若 i 大于 oldIndexEnd，则说明新节点比旧节点多，此时需要将新节点进行挂载
+        if (i > oldIndexEnd) {
+            // 且只有 i <= newIndexEnd 的时候，才表示是一个新节点
+            if (i <= newIndexEnd) {
+                // 插入的位置不一定就在最后，所以要确定锚点的位置
+                // 1. 获取新节点的下一个节点
+                const nextPos = newIndexEnd + 1
+                // 2. 获取新节点的下一个节点的锚点，如果不存在，则使用默认加入到容器末尾(锚点为null即可 parentAnchor = null)
+                const anchor = nextPos < newChildren.length ? newChildren[nextPos].el : parentAnchor
+                while (i <= newIndexEnd) {
+                    patch(null, newChildren[i], container, anchor)
+                    i++
+                }
+            }
+        }
+
+        // ***** step4：旧节点多余新节点，进行卸载 *****
+        // (a b) c
+        // (a b)
+        // 自前向后对比后的值：i = 2, oldIndexEnd = 2, newIndexEnd = 1
+        // a (b c)
+        // (b c)
+        // 自后向前对比后的值：i = 0, oldIndexEnd = 1, newIndexEnd = -1
+        // 若 i 大于 newIndexEnd，则说明旧节点比新节点多，此时需要将旧节点进行卸载
+        else if (i > newIndexEnd) {
+            // 索引 i 必须要处于 oldIndexEnd 之内，才表示是一个有效的旧节点
+            while (i <= oldIndexEnd) {
+                unmount(oldChildren[i])
+                i++
+            }
+        }
+
+        // ***** step5：处理剩余的中间部分-未知顺序 *****
+        //
     }
 
     /**
