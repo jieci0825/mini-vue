@@ -511,6 +511,7 @@ function baseCreateRenderer(options: RendererOptions): baseCreateRendererReturn 
                     // 可能需要 move
                     // 如果 lastSequenceIndex < 0，则说明不存在最长递增子序列，所有的节点都是需要移动的
                     // 如果 i 不等于 increasingNewIndexSequence[lastSequenceIndex]，则说明这个节点需要移动，i 是相对索引， increasingNewIndexSequence[lastSequenceIndex] 返回的也是一个相对索引
+                    // 如果 i 等于 increasingNewIndexSequence[lastSequenceIndex]，则说明这个节点不需要移动，因为它是最长递增子序列的一部分
                     if (lastSequenceIndex < 0 || i !== increasingNewIndexSequence[lastSequenceIndex]) {
                         move(nextChild, container, anchor)
                     } else {
