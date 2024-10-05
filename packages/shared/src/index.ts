@@ -29,6 +29,7 @@ export const isEqual = (value1: any, value2: any) => {
 export const extend: typeof Object.assign = Object.assign
 
 export const EMPTY_OBJ: { readonly [key: string]: any } = {}
+export const EMPTY_ARR: readonly never[] = []
 
 /**
  * 新旧两个值是否有变化

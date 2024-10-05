@@ -1,6 +1,6 @@
 import { ShapeFlags } from 'packages/shared/src/shapFlags'
 import { Comment, Fragment, isSameVNodeType, Text, VNode } from './vnode'
-import { EMPTY_OBJ, isFunction } from '@vue/shared'
+import { EMPTY_ARR, EMPTY_OBJ, isFunction } from '@vue/shared'
 import { type ComponentInstance, createComponentInstance, setupComponent } from './component'
 import { ReactiveEffect } from 'packages/reactivity/src/effect'
 import { queuePreFlushCbs } from './scheduler'
@@ -72,6 +72,14 @@ function baseCreateRenderer(options: RendererOptions): baseCreateRendererReturn 
      */
     function unmount(vnode: VNode) {
         hostRemove(vnode.el)
+    }
+
+    /**
+     * 移动元素
+     */
+    function move(vnode: VNode, container: CustomElement, anchor?: any) {
+        const { el } = vnode
+        hostInsert(el, container, anchor)
     }
 
     /**
@@ -299,6 +307,7 @@ function baseCreateRenderer(options: RendererOptions): baseCreateRendererReturn 
             // 如果新节点和旧节点的children都是数组，则进行 diff 算法
             if (prevShapeFlag & ShapeFlags.ARRAY_CHILDREN) {
                 if (shapeFlag & ShapeFlags.ARRAY_CHILDREN) {
+                    // todo 完成辨认 vnode 是否具备 key 属性，不具备 key 属性的，则使用双端比较
                     patchKeyChildren(c1, c2, container, anchor)
                 }
                 // 新节点的 children 不是一个数组，也不是一个文本节点，则需要进行卸载，则卸载旧节点的 children
@@ -407,9 +416,109 @@ function baseCreateRenderer(options: RendererOptions): baseCreateRendererReturn 
                 i++
             }
         }
-
         // ***** step5：处理剩余的中间部分-未知顺序 *****
-        //
+        // (a b) c d e (f g)
+        // (a b) e c d x (f g)
+        else {
+            // * 新老节点都存在，顺序不稳定，需要处理
+            // 暂存初始索引-因为后续 i 会被改变
+            const oldStartIndex = i // 旧节点的开始索引-源码为 s1
+            const newStartIndex = i // 新节点的结束索引-源码为 s2
+
+            // 把 newChildren 中的 vnode 映射到一个 key -> index 的 map 中
+            const keyToNewIndexMap = new Map()
+            for (i = newStartIndex; i <= newIndexEnd; i++) {
+                const nextChild = newChildren[i]
+                if (nextChild.key) {
+                    keyToNewIndexMap.set(nextChild.key, i)
+                }
+            }
+
+            // 需要更新的节点数量：新节点的索引 - 新节点的开始索引，+1 是因为索引从 0 开始，变为数量时需要 +1
+            const toBePatched = newIndexEnd - newStartIndex + 1
+            // 记录更新的次数：每新增或者更新一个节点，就 +1
+            let patched = 0
+
+            let moved = false // 是否需要移动
+            let maxNewIndexSoFar = 0 // 记录新节点中最大的索引值，用于后续判断是否需要移动
+
+            // * 下标是新元素的相对下标，初始值是 0，如果这个节点被复用了，值就是老元素的下标 + 1
+            const newIndexToOldIndexMap = new Array(toBePatched)
+            for (i = 0; i < toBePatched; i++) {
+                newIndexToOldIndexMap[i] = 0
+            }
+
+            // 遍历旧节点，进行对比
+            //  - 完成元素的复用和卸载
+            for (i = oldStartIndex; i <= oldIndexEnd; i++) {
+                const prevChild = oldChildren[i]
+                if (patched >= toBePatched) {
+                    // 如果更新的次数大于等于需要更新的节点数量，则说明剩下的节点都是需要卸载的
+                    unmount(prevChild)
+                    continue // 不使用 break，因为可能还有剩余的节点需要卸载
+                }
+
+                // 使用旧节点的key去map中招找新节点，如果找到就表示这个节点需要更新
+                let newIndex = keyToNewIndexMap.get(prevChild.key)
+                if (newIndex === undefined) {
+                    // 如果没找到，则说明这个节点需要卸载
+                    unmount(prevChild)
+                } else {
+                    // old: a b (c d)
+                    // new: b a (c d)
+                    // 比如这个例子，(old a)的index是 0，(new a)的index是 1，(old b)的index是 1，(new b)的index是 0
+                    // 那么经过 a 的循环之后 maxNewIndexSoFar 的值就是 1，当 b 的循环开始时，newIndex 的值是 0，小于 maxNewIndexSoFar，所以表示 b 需要触发移动
+                    // 如果从前先后遍历时发现当前最新的 newIndex 小于上一次记录的 maxNewIndexSoFar，则说明需要移动
+                    if (newIndex >= maxNewIndexSoFar) {
+                        maxNewIndexSoFar = newIndex
+                    } else {
+                        // 相对位置发生了变化，需要移动
+                        moved = true
+                    }
+
+                    // 如果找到了，则说明这个节点需要复用
+                    // 新节点的相对下标 = newIndex - newStartIndex
+                    newIndexToOldIndexMap[newIndex - newStartIndex] = i + 1
+
+                    patch(prevChild, newChildren[newIndex], container, null)
+                    patched++
+                }
+            }
+
+            // todo 完善 getSequence
+            // 获取最长递增子序列的索引-(这里的索引是新数组里面的相对下标)
+            const increasingNewIndexSequence = moved ? getSequence(newIndexToOldIndexMap) : EMPTY_ARR
+
+            // 如果 increasingNewIndexSequence 返回一个空数组，长度为0，则说明不存在最长递增子序列，所有的节点都是需要移动的
+            let lastSequenceIndex = increasingNewIndexSequence.length - 1
+            // 遍历新节点
+            //  - 完成新增和移动
+            //  - 这里使用 toBePatched 利用的是相对位置
+            for (i = toBePatched - 1; i >= 0; i--) {
+                // 起始位置 + i = 新节点的索引
+                const nextChildIndex = newStartIndex + i
+                const nextChild = newChildren[nextChildIndex]
+                // 1. 获取新节点的下一个节点
+                const nextPos = nextChildIndex + 1
+                // 2. 获取新节点的下一个节点的锚点，如果不存在，则使用默认加入到容器末尾(锚点为null即可 parentAnchor = null)
+                const anchor = nextPos < newChildren.length ? newChildren[nextPos].el : parentAnchor
+
+                // 判断节点是否需要进行 mount
+                // - 如果 newIndexToOldIndexMap[i] === 0，则说明这个节点是新增的
+                if (newIndexToOldIndexMap[i] === 0) {
+                    patch(null, nextChild, container, anchor)
+                } else if (moved) {
+                    // 可能需要 move
+                    // 如果 lastSequenceIndex < 0，则说明不存在最长递增子序列，所有的节点都是需要移动的
+                    // 如果 i 不等于 increasingNewIndexSequence[lastSequenceIndex]，则说明这个节点需要移动，i 是相对索引， increasingNewIndexSequence[lastSequenceIndex] 返回的也是一个相对索引
+                    if (lastSequenceIndex < 0 || i !== increasingNewIndexSequence[lastSequenceIndex]) {
+                        move(nextChild, container, anchor)
+                    } else {
+                        lastSequenceIndex--
+                    }
+                }
+            }
+        }
     }
 
     /**
@@ -555,4 +664,120 @@ function baseCreateRenderer(options: RendererOptions): baseCreateRendererReturn 
     return {
         render
     }
+}
+
+/**
+ * 获取最长递增子序列的值的索引
+ * @description 传入的是 vnode，返回的需要是 vnode 的索引
+ */
+function getSequence(arr: any[]): number[] {
+    // * arr [1, 8, 5, 3, 4, 9, 7, 6]
+
+    // 备份一次，作为前驱索引(predecessor)
+    const p = arr.slice(0)
+    // 返回的是路径，即下标
+    const result = [0] // 存储的也是下标，即新节点的相对下标
+    const len = arr.length
+
+    let start, end, middle
+
+    for (let i = 0; i < len; i++) {
+        const arrItem = arr[i]
+        // 若值为 0 表示是新增的，无需移动，这里不需要考虑
+        if (arrItem !== 0) {
+            // 获取当前 result 的最后一个元素
+            const lastIndex = result[result.length - 1]
+            // 1
+            // 1 8
+            // 1 8 10
+            // 这个 lastIndex 记录的就是上一次 arr 中追加的递增值的索引，所以通过索引来获取真实的值，然后与当前值进行比较
+            // 如果当前这个值比上一次的值大，则追加到 result 中，表示递增
+            // 判断当前元素是否能继续递增
+            if (arr[lastIndex] < arrItem) {
+                // 记住递增前一位的索引，这里在 push 前记录，即无需进行索引 -1 的操作
+                p[i] = lastIndex
+                // 这里要追加的是索引
+                result.push(i)
+                continue
+            }
+
+            start = 0
+            end = result.length - 1
+
+            // 利用二分查找，找到比当前值大的那个值，然后替换掉-这样效率比较高一点
+            //  - 二分不能越界，因此 start 要小于 end
+            // * 由于 result 里面存储的索引都是递增的，因此只要不满足 start < end 这个条件，就可以找到比 arrItem 大的最小元素的位置
+            while (start < end) {
+                // 获取中间值-利用右移运算符，将结果向右移动一位，相当于将结果除以 2 并取整
+                middle = (start + end) >> 1
+                // 通过这个索引获取到对应的值，来与 arrItem 进行比较，进行查找范围的缩小
+                // 如果小于当前值，表示目标元素在 middle 的右边，因此将 start 移动到 middle + 1
+                if (arr[result[middle]] < arrItem) {
+                    start = middle + 1
+                }
+                // 如果大于当前值，表示目标元素在 middle 的左边，因此将 end 移动到 middle
+                else {
+                    end = middle
+                }
+            }
+
+            // 前面已经将 start 赋值为比当前 arrItem 大的索引值，最后将 result 中的值替换掉即可
+            if (arr[result[start]] > arrItem) {
+                // 如果 start = 0 则没有记录的必要
+                if (start > 0) {
+                    // 记录前一位递增数的索引
+                    p[i] = result[start - 1]
+                }
+                result[start] = i
+            }
+        }
+    }
+
+    // 最后根据 p 记录的索引进行纠正，保证返回的递增序列是正确的
+    let tLen = result.length
+    let last = result[tLen - 1]
+    // 进行倒叙，因为 p 记录的是前驱索引
+    while (tLen-- > 0) {
+        // 获取前驱索引
+        result[tLen] = last
+        // 获取前驱索引对应的值
+        // result[tLen] = arr[last]
+        last = p[last]
+    }
+
+    return result
+}
+
+/**
+ * 获取最长递增子序列的值
+ */
+function getSequenceValue(arr: number[]): number[] {
+    if (arr.length === 0) return []
+    if (arr.length === 1) return arr
+
+    // 初始化一个二维数组，arr 第一项作为最初始的比对项
+    const resultList = [[arr[0]]]
+
+    function _update(item: number) {
+        for (let i = resultList.length - 1; i >= 0; i--) {
+            const result = resultList[i] // 当前的递增子序列
+            const lastItem = result[result.length - 1] // 当前递增子序列的最后一个元素
+
+            // 如果 item 大于递增子序列的最后一个元素，则将 item 与 result 合并，并加入到 resultList 中下一项
+            if (item > lastItem) {
+                // 这里不使用 push，是因为需要逐步更新 resultList
+                resultList[i + 1] = [...result, item]
+                return
+            }
+        }
+        resultList[0] = [item]
+    }
+
+    for (let i = 0; i < arr.length; i++) {
+        const item = arr[i]
+        _update(item)
+    }
+
+    // 返回这个二维数组的最后一个数组，即最长递增子序列
+    return resultList[resultList.length - 1]
 }

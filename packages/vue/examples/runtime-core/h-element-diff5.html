@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Document</title>
+</head>
+
+<body>
+    <div id="app"></div>
+
+    <script src="../../dist/mini-vue.js"></script>
+    <script>
+        const { h, render } = MiniVue
+        const vnode1 = h('ul', [
+            h('li', { key: 'a' }, 'a'),
+            h('li', { key: 'b' }, 'b'),
+            // 乱序 start
+            h('li', { key: 'e' }, 'e'),
+            h('li', { key: 'c' }, 'c'),
+            h('li', { key: 'd' }, 'd'),
+            h('li', { key: 'h' }, 'h'),
+            // 乱序 end
+            h('li', { key: 'f' }, 'f'),
+            h('li', { key: 'g' }, 'g'),
+        ])
+
+        render(vnode1, document.querySelector('#app'))
+
+        window.update = () => {
+            const vnode2 = h('ul', [
+                h('li', { key: 'a' }, 'a'),
+                h('li', { key: 'b' }, 'b'),
+                // 乱序 start
+                h('li', { key: 'c' }, 'c'),
+                h('li', { key: 'd' }, 'd'),
+                h('li', { key: 'e' }, 'e'),
+                h('li', { key: 'q' }, 'q'),
+                // 乱序 end
+                h('li', { key: 'f' }, 'f'),
+                h('li', { key: 'g' }, 'g'),
+            ])
+            render(vnode2, document.querySelector('#app'))
+        }
+    </script>
+
+</body>
+
+</html>
