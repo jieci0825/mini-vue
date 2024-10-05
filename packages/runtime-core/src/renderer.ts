@@ -75,6 +75,15 @@ function baseCreateRenderer(options: RendererOptions): baseCreateRendererReturn 
     }
 
     /**
+     * 批量卸载子节点
+     */
+    function unmountChildren(children: VNode[]) {
+        for (let i = 0; i < children.length; i++) {
+            unmount(children[i])
+        }
+    }
+
+    /**
      * 移动元素
      */
     function move(vnode: VNode, container: CustomElement, anchor?: any) {
@@ -294,7 +303,7 @@ function baseCreateRenderer(options: RendererOptions): baseCreateRendererReturn 
             //  - 这里在 h 函数中进行了 children 的参数处理，如果 h(div,null,vnode) 会包装为 h(div,null,[vnode])
             //  - 所以如果不是数组，就是字符串
             if (prevShapeFlag & ShapeFlags.ARRAY_CHILDREN) {
-                // todo 卸载旧节点的 children
+                unmountChildren(oldVNode.children)
             }
 
             // 如果新旧节点的字符串内容不一样，则直接更新文本内容
@@ -313,6 +322,7 @@ function baseCreateRenderer(options: RendererOptions): baseCreateRendererReturn 
                 // 新节点的 children 不是一个数组，也不是一个文本节点，则需要进行卸载，则卸载旧节点的 children
                 else {
                     // todo 卸载旧节点的 children
+                    unmountChildren(c1)
                 }
             }
             // 旧节点的 children 也不是数组的处理
@@ -485,7 +495,6 @@ function baseCreateRenderer(options: RendererOptions): baseCreateRendererReturn 
                 }
             }
 
-            // todo 完善 getSequence
             // 获取最长递增子序列的索引-(这里的索引是新数组里面的相对下标)
             const increasingNewIndexSequence = moved ? getSequence(newIndexToOldIndexMap) : EMPTY_ARR
 
