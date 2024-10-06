@@ -19,12 +19,19 @@ function createParserContext(content: string): ParseContext {
     }
 }
 
+export function createRoot(children) {
+    return {
+        type: NodeTypes.ROOT,
+        children,
+        loc: {}
+    }
+}
+
 export function baseParse(content: string) {
     const context = createParserContext(content)
     // 通过不断的解析，来生成 ast
     const children = parseChildren(context, [])
-    console.log('parse', children)
-    return {}
+    return createRoot(children)
 }
 
 function parseChildren(context: ParseContext, ancestors) {
@@ -55,6 +62,9 @@ function parseChildren(context: ParseContext, ancestors) {
     return ndoes
 }
 
+/**
+ * 解析元素
+ */
 function parseElement(context: ParseContext, ancestors) {
     // * 处理标签的开始
     const element = parseTag(context, TagType.Start)
@@ -77,6 +87,9 @@ function parseElement(context: ParseContext, ancestors) {
     return element
 }
 
+/**
+ * 解析文本
+ */
 function parseText(context: ParseContext) {
     // 定义结束 tokens - 遇到 < 或 {{ 就结束
     const endTokens = ['<', '{{']
@@ -122,6 +135,9 @@ function parseTextData(context: ParseContext, length: number) {
     return rawText
 }
 
+/**
+ * 解析标签
+ */
 function parseTag(context: ParseContext, type: TagType) {
     // 通过正则表达式匹配HTML 标签的开头部分，并捕获标签名
     // 定义解析标签的正则：表示必须以 < 开头，/可加可不加，且第一个字符必须以字母开头，后面可以跟任意字符，只要不是空格和标签结束的符号，都是合法的名称
@@ -138,6 +154,8 @@ function parseTag(context: ParseContext, type: TagType) {
     let isSelfClosing = startsWith(context.source, '/>')
     // 根据判断的结果，移动指针。自闭合两位，非自闭合一位
     advanceBy(context, isSelfClosing ? 2 : 1)
+
+    // todo 类型这里还要多一层处理，判断这个标签是元素还是组件
 
     return {
         type: NodeTypes.ELEMENT,
