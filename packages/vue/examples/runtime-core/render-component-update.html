@@ -12,7 +12,10 @@
 
     <script src="../../dist/mini-vue.js"></script>
     <script>
+        // 无状态的组件更新
         const { h, render } = MiniVue
+
+        const app = document.querySelector('#app')
 
         const comp = {
             render() {
@@ -22,7 +25,7 @@
 
         const vnode = h(comp)
 
-        render(vnode, document.querySelector('#app'))
+        render(vnode, app)
 
         window.update = () => {
             const comp = {
@@ -31,7 +34,7 @@
                 }
             }
             const vnode = h(comp)
-            render(vnode, document.querySelector('#app'))
+            render(vnode, app)
         }
 
     </script>
