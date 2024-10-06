@@ -41,6 +41,10 @@ export const hasChanged = (oldValue: unknown, newValue: unknown): boolean => {
     return !Object.is(oldValue, newValue)
 }
 
+export const startsWith = (value: string, searchString: string): boolean => {
+    return value.startsWith(searchString)
+}
+
 /**
  * 是否是以on开头的字符串
  */
