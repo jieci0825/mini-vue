@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Document</title>
+</head>
+
+<body>
+    <div id="app"></div>
+
+    <script src="../../dist/mini-vue.js"></script>
+    <script>
+        const { h, render } = MiniVue
+
+        const Child = {
+            render() {
+                return h('h2', { style: { color: 'red' } }, '我是一个子组件')
+            }
+        }
+
+
+        // 测试父传子
+
+        const Parent = {
+            render() {
+                return h('div', [
+                    h('h1', '我是一个父组件'),
+                    h(Child)
+                ])
+            }
+        }
+        const vnode = h(Parent)
+        render(vnode, document.querySelector('#app'))
+    </script>
+</body>
+
+</html>

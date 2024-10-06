@@ -94,7 +94,7 @@ function baseCreateRenderer(options: RendererOptions): baseCreateRendererReturn 
     /**
      * 更新Text
      */
-    function patchTextNode(oldVNode: VNode, newVNode: VNode) {
+    function updateTextNode(oldVNode: VNode, newVNode: VNode) {
         // 节点进行复用，只需要更新文本内容即可
         const el = (newVNode.el = oldVNode.el)
         if (oldVNode.children !== newVNode.children) {
@@ -113,7 +113,7 @@ function baseCreateRenderer(options: RendererOptions): baseCreateRendererReturn 
     /**
      * 更新Comment
      */
-    function patchCommentNode(oldVNode: VNode, newVNode: VNode) {
+    function updateCommentNode(oldVNode: VNode, newVNode: VNode) {
         const el = (newVNode.el = oldVNode.el)
         if (oldVNode.children !== newVNode.children) {
             hostSetText(el, newVNode.children)
@@ -182,6 +182,23 @@ function baseCreateRenderer(options: RendererOptions): baseCreateRendererReturn 
 
         // 触发实际的渲染，即render函数执行
         setupRenderEffect(instance, initialVNode, container, anchor)
+    }
+
+    /**
+     * 更新组件
+     */
+    function updateComponent(n1: VNode, n2: VNode) {
+        // * 这里的更新属于被动更新，比如父传子，子组件的 props 发生变化，子组件会触发更新
+        // 此时子组件发生的更新就是被动更新
+
+        // 在组件初次挂载的时候，会同步给 component 属性也赋值为实例
+        n2.component = n1.component
+        // 这里进行赋值next，表示后续需要被动更新就行了，但是被动更新一定需要吗？
+        //  - 比如父传子的 props 并没有发生变化，此时就不需要进行被动更新
+        //  - TODO：在 Vue 中使用的 shouldUpdateComponent 函数来判断是否要被动更新的，大概就是判断一下属性什么的来决定
+        //  - 这里就不做太精细的操作了
+        n2.component.next = n2
+        n2.component.update()
     }
 
     function setupRenderEffect(
@@ -536,7 +553,7 @@ function baseCreateRenderer(options: RendererOptions): baseCreateRendererReturn 
      * @param oldVNode 旧的 vnode
      * @param newVNode 新的 vnode
      */
-    function patchElement(oldVNode: VNode, newVNode: VNode) {
+    function updateElement(oldVNode: VNode, newVNode: VNode) {
         // 将 dom 也保存到新的 vnode 中，方便后续对比
         const el = (newVNode.el = oldVNode.el)
 
@@ -556,7 +573,7 @@ function baseCreateRenderer(options: RendererOptions): baseCreateRendererReturn 
         if (oldVNode === null) {
             mountTextNode(newVNode, container, anchor)
         } else {
-            patchTextNode(oldVNode, newVNode)
+            updateTextNode(oldVNode, newVNode)
         }
     }
 
@@ -568,7 +585,7 @@ function baseCreateRenderer(options: RendererOptions): baseCreateRendererReturn 
         if (oldVNode === null) {
             mountCommentNode(newVNode, container, anchor)
         } else {
-            patchCommentNode(oldVNode, newVNode)
+            updateCommentNode(oldVNode, newVNode)
         }
     }
 
@@ -593,7 +610,7 @@ function baseCreateRenderer(options: RendererOptions): baseCreateRendererReturn 
             mountElement(newVNode, container, anchor)
         } else {
             // 如果 oldVNode 不为 null，则表示需要执行更新操作
-            patchElement(oldVNode, newVNode)
+            updateElement(oldVNode, newVNode)
         }
     }
 
@@ -605,7 +622,7 @@ function baseCreateRenderer(options: RendererOptions): baseCreateRendererReturn 
             // 如果 oldVNode 为 null，则表示需要执行挂载操作
             mountComponent(newVNode, container, anchor)
         } else {
-            // todo patch
+            updateComponent(oldVNode, newVNode)
         }
     }
 
