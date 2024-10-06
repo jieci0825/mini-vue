@@ -120,7 +120,8 @@ function parseText(context: ParseContext) {
 
     return {
         type: NodeTypes.TEXT,
-        content
+        content,
+        loc: {}
     }
 }
 
@@ -162,7 +163,8 @@ function parseTag(context: ParseContext, type: TagType) {
         tag,
         tagType: ElementTypes.ELEMENT,
         props: [],
-        children: []
+        children: [],
+        loc: {}
     }
 }
 
