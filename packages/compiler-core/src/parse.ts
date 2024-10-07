@@ -1,5 +1,5 @@
 import { startsWith } from '@vue/shared'
-import { ElementTypes, NodeTypes } from './ast'
+import { ElementNode, ElementTypes, NodeTypes, RootNode, TextNode } from './ast'
 
 export interface ParseContext {
     source: string
@@ -19,15 +19,14 @@ function createParserContext(content: string): ParseContext {
     }
 }
 
-export function createRoot(children) {
+export function createRoot(children): RootNode {
     return {
         type: NodeTypes.ROOT,
-        children,
-        loc: {}
+        children: children || []
     }
 }
 
-export function baseParse(content: string) {
+export function baseParse(content: string): RootNode {
     const context = createParserContext(content)
     // 通过不断的解析，来生成 ast
     const children = parseChildren(context, [])
@@ -90,7 +89,7 @@ function parseElement(context: ParseContext, ancestors) {
 /**
  * 解析文本
  */
-function parseText(context: ParseContext) {
+function parseText(context: ParseContext): TextNode {
     // 定义结束 tokens - 遇到 < 或 {{ 就结束
     const endTokens = ['<', '{{']
 
@@ -120,15 +119,14 @@ function parseText(context: ParseContext) {
 
     return {
         type: NodeTypes.TEXT,
-        content,
-        loc: {}
+        content
     }
 }
 
 /**
  * 返回裁剪的内容和移动光标的位置
  */
-function parseTextData(context: ParseContext, length: number) {
+function parseTextData(context: ParseContext, length: number): string {
     // 根据索引进行截取，拿到这串应该展示的文本
     const rawText = context.source.slice(0, length)
     // 并移动光标到截取完字符串的位置
@@ -139,7 +137,7 @@ function parseTextData(context: ParseContext, length: number) {
 /**
  * 解析标签
  */
-function parseTag(context: ParseContext, type: TagType) {
+function parseTag(context: ParseContext, type: TagType): ElementNode {
     // 通过正则表达式匹配HTML 标签的开头部分，并捕获标签名
     // 定义解析标签的正则：表示必须以 < 开头，/可加可不加，且第一个字符必须以字母开头，后面可以跟任意字符，只要不是空格和标签结束的符号，都是合法的名称
     // 这段正则解析 <div class="box">hello world</div> 会得到一个数组 ['<div', 'div]
@@ -163,8 +161,7 @@ function parseTag(context: ParseContext, type: TagType) {
         tag,
         tagType: ElementTypes.ELEMENT,
         props: [],
-        children: [],
-        loc: {}
+        children: []
     }
 }
 
@@ -173,7 +170,7 @@ function pushNode(ndoes, node) {
 }
 
 // 判断当前的标签是否是结束标签
-function isEnd(context: ParseContext) {
+function isEnd(context: ParseContext): boolean {
     const source = context.source
     // source 为空字符串 或者开头是结束标签，就表示要结束解析了
     return !source || source.startsWith('</')
