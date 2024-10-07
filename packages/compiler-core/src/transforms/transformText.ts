@@ -56,7 +56,6 @@ export function transformText(node, context) {
         node.type === NodeTypes.IF_BRANCH
     ) {
         return () => {
-            console.log('调用')
             const children = node.children
             let currentContainer
             for (let i = 0; i < children.length; i++) {
