@@ -43,6 +43,8 @@ export function createVNode(type: any, props: any, children: any): VNode {
     return createBaseVNode(type, props, children, shapeFlag)
 }
 
+export { createVNode as createElementVNode }
+
 function createBaseVNode(type: any, props: any, children: any, shapeFlag: number): VNode {
     const vnode: VNode = {
         [IsVNode]: true,

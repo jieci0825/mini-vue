@@ -1,4 +1,4 @@
-import { CREATE_VNODE } from './runtimeHelpers'
+import { CREATE_ELEMENT_VNODE, CREATE_VNODE } from './runtimeHelpers'
 import { TransformContext } from './transform'
 
 // 节点类型
@@ -137,7 +137,7 @@ export type ExpressionNode = SimpleExpressionNode | CompoundExpressionNode
 export function createVNodeCall(context: TransformContext, tag: string, props?, children?) {
     if (context) {
         // 放入一个函数名
-        context.helper(CREATE_VNODE)
+        context.helper(CREATE_ELEMENT_VNODE)
     }
 
     return {
