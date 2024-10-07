@@ -2,6 +2,7 @@ export const isBoolean = (value: unknown): boolean => {
     return typeof value === 'boolean'
 }
 
+// 添加 value is xx 可以限制这个变量的类型
 export const isString = (value: unknown): value is string => {
     return typeof value === 'string'
 }

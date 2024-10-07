@@ -1,3 +1,6 @@
+import { CREATE_VNODE } from './runtimeHelpers'
+import { TransformContext } from './transform'
+
 // 节点类型
 export enum NodeTypes {
     ROOT,
@@ -77,9 +80,11 @@ export interface SlotNode extends BaseElementNode {
 // 元素节点
 export type ElementNode = PlainElementNode | ComponentNode | TemplateNode | SlotNode
 
+// 父节点
 export type ParentNode = RootNode | ElementNode
 
-export type TemplateChildNode = ElementNode | TextNode | CommentNode
+// 模板里面的节点
+export type TemplateChildNode = ElementNode | TextNode | CommentNode | InterpolationNode | CompoundExpressionNode
 
 // 文本节点
 export interface TextNode extends Node {
@@ -97,10 +102,50 @@ export interface CommentNode extends Node {
 export interface SimpleExpressionNode extends Node {
     type: NodeTypes.SIMPLE_EXPRESSION
     content: string
+    isStatic: boolean
 }
 
 // 根节点
 export interface RootNode extends Node {
     type: NodeTypes.ROOT
     children: any[]
+}
+
+// 插值语法
+export interface InterpolationNode extends Node {
+    type: NodeTypes.INTERPOLATION
+    content: ExpressionNode
+}
+
+// 复合表达式节点
+export interface CompoundExpressionNode extends Node {
+    type: NodeTypes.COMPOUND_EXPRESSION
+    children: (SimpleExpressionNode | InterpolationNode | CompoundExpressionNode | TextNode | string | symbol)[]
+}
+
+// 表达式
+export type ExpressionNode = SimpleExpressionNode | CompoundExpressionNode
+
+export function createVNodeCall(context: TransformContext, tag: string, props?, children?) {
+    if (context) {
+        // 放入一个函数名
+        context.helper(CREATE_VNODE)
+    }
+
+    return {
+        type: NodeTypes.VNODE_CALL,
+        props,
+        tag,
+        children
+    }
+}
+
+/**
+ * 创建复合表达式节点
+ */
+export function createCompoundExpression(children: CompoundExpressionNode['children']) {
+    return {
+        type: NodeTypes.COMPOUND_EXPRESSION,
+        children
+    }
 }
