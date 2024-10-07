@@ -1,4 +1,5 @@
 import { type RootNode, NodeTypes, ParentNode, TemplateChildNode } from './ast'
+import { isSingleElementRoot } from './transforms/cacheStatic'
 
 export interface TransformContext {
     root: RootNode
@@ -15,7 +16,15 @@ export function transform(root: RootNode, options) {
     const context = createTransformContext(root, options)
     // 遍历AST-转化节点
     traverseNode(root, context)
-    console.log(context)
+    createRootCodegen(root)
+
+    root.helpers = [...context.helpers.keys()]
+    root.components = []
+    root.directives = []
+    root.hoists = []
+    root.imports = []
+    root.temps = []
+    root.cached = []
 }
 
 export function traverseNode(node: RootNode | TemplateChildNode, context: TransformContext) {
@@ -73,4 +82,17 @@ function createTransformContext(root: RootNode, { nodeTransforms = [] }): Transf
         }
     }
     return context
+}
+
+function createRootCodegen(root: RootNode) {
+    const { children } = root
+    // 处理单个根节点
+    if (children.length) {
+        const child = children[0]
+        if (isSingleElementRoot(root, child) && child.codegenNode) {
+            root.codegenNode = child.codegenNode
+        }
+    }
+
+    // todo: 处理多个根节点
 }

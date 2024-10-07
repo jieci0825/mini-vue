@@ -109,6 +109,14 @@ export interface SimpleExpressionNode extends Node {
 export interface RootNode extends Node {
     type: NodeTypes.ROOT
     children: any[]
+    codegenNode: any
+    helpers: any
+    imports: any
+    components: any
+    directives: any
+    hoists: any
+    temps: any
+    cached: any
 }
 
 // 插值语法
