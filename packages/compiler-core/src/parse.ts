@@ -1,5 +1,5 @@
 import { startsWith } from '@vue/shared'
-import { ElementNode, ElementTypes, NodeTypes, RootNode, TextNode } from './ast'
+import { ElementNode, ElementTypes, NodeTypes, RootNode, TextNode, InterpolationNode } from './ast'
 
 export interface ParseContext {
     source: string
@@ -22,7 +22,15 @@ function createParserContext(content: string): ParseContext {
 export function createRoot(children): RootNode {
     return {
         type: NodeTypes.ROOT,
-        children: children || []
+        children: children || [],
+        helpers: [],
+        components: [],
+        directives: [],
+        hoists: [],
+        imports: [],
+        temps: [],
+        codegenNode: undefined,
+        cached: []
     }
 }
 
@@ -42,7 +50,7 @@ function parseChildren(context: ParseContext, ancestors) {
         let node
 
         if (startsWith(s, '{{')) {
-            // todo 处理 vue 的模板语法
+            node = parseInterpolation(context)
         } else if (startsWith(s[0], '<')) {
             // 检测 < 后面跟的是不是字母
             if (/[a-z]$/.test(s[1])) {
@@ -59,6 +67,29 @@ function parseChildren(context: ParseContext, ancestors) {
     }
 
     return ndoes
+}
+
+/**
+ * 解析插值语法
+ */
+function parseInterpolation(context: ParseContext): InterpolationNode {
+    // 解析插值语法 {{ xxx }}
+    const [open, close] = ['{{', '}}']
+    // 吃掉插值语法开始部分
+    advanceBy(context, open.length)
+    // 获取插值语法的内容
+    const content = parseTextData(context, context.source.indexOf(close)).trim()
+    // 吃掉插值语法结束部分
+    advanceBy(context, close.length)
+
+    return {
+        type: NodeTypes.INTERPOLATION,
+        content: {
+            type: NodeTypes.SIMPLE_EXPRESSION,
+            content,
+            isStatic: false
+        }
+    }
 }
 
 /**

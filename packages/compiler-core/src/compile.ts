@@ -7,12 +7,12 @@ import { generate } from './codegen'
 
 export function baseCompile(template: string, options = {}) {
     const ast = baseParse(template)
+    console.log(JSON.stringify(ast, null, 4))
     transform(
         ast,
         extend(options, {
             nodeTransforms: [transformElement, transformText]
         })
     )
-    console.log(ast)
     return generate(ast)
 }

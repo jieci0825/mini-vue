@@ -19,12 +19,6 @@ export function transform(root: RootNode, options) {
     createRootCodegen(root)
 
     root.helpers = [...context.helpers.keys()]
-    root.components = []
-    root.directives = []
-    root.hoists = []
-    root.imports = []
-    root.temps = []
-    root.cached = []
 }
 
 export function traverseNode(node: RootNode | TemplateChildNode, context: TransformContext) {
