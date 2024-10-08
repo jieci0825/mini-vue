@@ -14,10 +14,11 @@
     <script>
         const { compile, h, render } = MiniVue
 
-        const template = `<h1>{{ msg }}</h1>`
+        const template = `<h1>笺语：{{ msg }}</h1>`
 
         const renderFn = compile(template)
 
+        console.log(renderFn.toString())
         const comp = {
             data() {
                 return {
@@ -29,6 +30,7 @@
 
         const vnode = h(comp)
         render(vnode, document.querySelector('#app'))
+
     </script>
 </body>
 

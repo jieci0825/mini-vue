@@ -1,13 +1,35 @@
 import { isArray, isString } from '@vue/shared'
-import { NodeTypes } from './ast'
-import { helperNameMap } from './runtimeHelpers'
+import {
+    CompoundExpressionNode,
+    InterpolationNode,
+    NodeTypes,
+    SimpleExpressionNode,
+    TemplateChildNode,
+    TextNode
+} from './ast'
+import { helperNameMap, TO_DISPLAY_STRING } from './runtimeHelpers'
 import { getVNodeHelper } from './utils'
+
+type CodegenNode = TemplateChildNode
+
+export interface CodegenContext {
+    code: string
+    runtimeGlobalName: string
+    source: string
+    indentLevel: number
+    isSSR: boolean
+    helper(key: symbol): string
+    push(code: string): void
+    indent(): void
+    deindent(): void
+    newline(): void
+}
 
 function aliasHelper(s: symbol) {
     return `${helperNameMap[s]}: _${helperNameMap[s]}`
 }
 
-function createCodegenContext(ast) {
+function createCodegenContext(ast): CodegenContext {
     const context = {
         code: '',
         runtimeGlobalName: 'MiniVue', // 全局变量名
@@ -58,6 +80,10 @@ export function generate(ast) {
     // 缩进+换行
     indent()
 
+    // 增加 with 语句，绑定默认上下文
+    push('with (_ctx) {')
+    indent()
+
     const hasHelpers = ast.helpers.length > 0
     if (hasHelpers) {
         push(`const { ${ast.helpers.map(aliasHelper).join(', ')} } = _Vue`)
@@ -74,6 +100,10 @@ export function generate(ast) {
         push('null')
     }
 
+    // 对应 with 语句
+    deindent()
+    push('}')
+
     // 缩进改回来
     deindent()
     // 补全函数体结束花括号
@@ -85,15 +115,56 @@ export function generate(ast) {
     }
 }
 
-function genNode(node, context) {
+function genNode(node, context: CodegenContext) {
     switch (node.type) {
+        // 元素
         case NodeTypes.VNODE_CALL:
             genVNodeCall(node, context)
             break
+        // 文本
         case NodeTypes.TEXT:
             genText(node, context)
             break
+        // 插值语法
+        case NodeTypes.INTERPOLATION:
+            genInterpolation(node, context)
+            break
+        // 简单表达式
+        case NodeTypes.SIMPLE_EXPRESSION:
+            genExpression(node, context)
+            break
+        // 复合表达式
+        case NodeTypes.COMPOUND_EXPRESSION:
+            genCompoundExpression(node, context)
+            break
     }
+}
+
+function genCompoundExpression(node: CompoundExpressionNode, context: CodegenContext) {
+    // 对于复合表达式，所需要处理的就是它里面的 children
+    const { children } = node
+    for (let i = 0; i < children.length; i++) {
+        const child = children[i]
+        if (isString(child)) {
+            context.push(child)
+        } else {
+            genNode(child, context)
+        }
+    }
+}
+
+function genExpression(node: SimpleExpressionNode, context: CodegenContext) {
+    const { push } = context
+    push(node.isStatic ? JSON.stringify(node.content) : node.content)
+}
+
+function genInterpolation(node: InterpolationNode, context: CodegenContext) {
+    const { push, helper } = context
+
+    // 生成函数调用
+    push(`${helper(TO_DISPLAY_STRING)}(`)
+    genNode(node.content, context)
+    push(')')
 }
 
 function genVNodeCall(node, context) {
@@ -113,7 +184,7 @@ function genVNodeCall(node, context) {
     push(')')
 }
 
-function getNodeList(nodes, context) {
+function getNodeList(nodes, context: CodegenContext) {
     const { push } = context
     for (let i = 0; i < nodes.length; i++) {
         const node = nodes[i]
@@ -136,7 +207,7 @@ function getNodeList(nodes, context) {
     }
 }
 
-function getNodeListAsArray(nodes, context) {
+function getNodeListAsArray(nodes, context: CodegenContext) {
     const { push } = context
     push('[')
     getNodeList(nodes, context)
@@ -152,17 +223,18 @@ function getNullableArgs(args: any[]) {
     }
     // 经过前面的 while 循环，i 的值就是最后一个不为 null 的参数的索引
     // 根据索引截取数组，并再次进行遍历，所有为假值的参数都用字符串 'null' 替换
+    // 这样处理就可以实现类似 h('div', null, 'hello') 的效果
     return args.slice(0, i + 1).map(arg => arg || `null`)
 }
 
-function genText(node, context) {
+function genText(node, context: CodegenContext) {
     const { push } = context
     push(JSON.stringify(node.content))
 }
 
 // 生成前置代码
-function genFunctionPreamble(context) {
-    const { push, newline, indent, deindent, runtimeGlobalName } = context
+function genFunctionPreamble(context: CodegenContext) {
+    const { push, newline, runtimeGlobalName } = context
     const VueBinding = runtimeGlobalName
     push(`const _Vue = ${VueBinding}\n`)
     newline()

@@ -9,7 +9,7 @@ export function transformElement(node, context: TransformContext) {
         const { tag } = node
         let vnodeTag = `"${tag}"`
         // todo props 暂不处理
-        let vnodeProps = []
+        let vnodeProps = undefined
         let vnodeChildren = node.children
 
         // * 核心处理就在于此，生成 codegenNode 属性

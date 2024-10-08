@@ -1,4 +1,5 @@
 import { type RootNode, NodeTypes, ParentNode, TemplateChildNode } from './ast'
+import { TO_DISPLAY_STRING } from './runtimeHelpers'
 import { isSingleElementRoot } from './transforms/cacheStatic'
 
 export interface TransformContext {
@@ -18,7 +19,7 @@ export function transform(root: RootNode, options) {
     traverseNode(root, context)
     createRootCodegen(root)
 
-    root.helpers = [...context.helpers.keys()]
+    root.helpers.push(...context.helpers.keys())
 }
 
 export function traverseNode(node: RootNode | TemplateChildNode, context: TransformContext) {
@@ -37,16 +38,22 @@ export function traverseNode(node: RootNode | TemplateChildNode, context: Transf
     }
 
     switch (node.type) {
+        // 处理元素和根节点
         case NodeTypes.ELEMENT:
         case NodeTypes.ROOT:
             traverseChildren(node, context)
+            break
+        // 处理插值语法节点
+        case NodeTypes.INTERPOLATION:
+            context.helper(TO_DISPLAY_STRING)
             break
     }
 
     // 倒叙执行处理的节点函数，保证子节点先处理
     context.currentNode = node
 
-    let i = existFn.length - 1
+    let i = existFn.length
+    // 使用 while 是要比 for 快 (可以使用 https://jsbench.me/ 来测试一下)
     while (i--) {
         existFn[i]()
     }
@@ -70,6 +77,9 @@ function createTransformContext(root: RootNode, { nodeTransforms = [] }): Transf
         currentNode: root,
         helpers: new Map(),
         helper(name) {
+            // 这里会收集调用的次数
+            // 收集次数是为了给删除做处理的， （当只有 count 为0 的时候才需要真的删除掉）
+            // helpers 数据会在后续生成代码的时候用到
             const count = context.helpers.get(name) || 0
             context.helpers.set(name, count + 1)
             return name
@@ -83,8 +93,14 @@ function createRootCodegen(root: RootNode) {
     // 处理单个根节点
     if (children.length) {
         const child = children[0]
+        // 如果是 element 类型的话 ， 那么我们需要把它的 codegenNode 赋值给 root
+        // root 其实是个空的什么数据都没有的节点
+        // 所以这里需要额外的处理 codegenNode
+        // codegenNode 的目的是专门为了 codegen 准备的  为的就是和 ast 的 node 分离开
         if (isSingleElementRoot(root, child) && child.codegenNode) {
             root.codegenNode = child.codegenNode
+        } else {
+            root.codegenNode = child
         }
     }
 

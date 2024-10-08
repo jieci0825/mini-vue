@@ -11,7 +11,9 @@ export function renderComponentRoot(instance: ComponentInstance) {
     try {
         if (vnode.shapeFlag & ShapeFlags.STATEFUL_COMPONENT) {
             // 改变 this 指向，让模板内部的数据可以通过 this 访问到
-            result = normalizeVNode(render.call(data))
+            //  - 后续使用 with 语法，就会让其内部使用 this 的地方，都指向 data，with(_ctx) 这个上面
+            //  - 所以如果要让 with(_ctx) 的 _ctx 也指向 data，那么就要把 data 也作为参数传递进去
+            result = normalizeVNode(render.call(data, data))
         }
     } catch (error) {
         console.error(error)
