@@ -13,5 +13,6 @@ export function baseCompile(template: string, options = {}) {
             nodeTransforms: [transformElement, transformText]
         })
     )
+    console.log(ast)
     return generate(ast)
 }

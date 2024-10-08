@@ -137,6 +137,11 @@ function genNode(node, context: CodegenContext) {
         case NodeTypes.COMPOUND_EXPRESSION:
             genCompoundExpression(node, context)
             break
+        // 元素
+        case NodeTypes.ELEMENT:
+            console.log('处理 Element', node)
+            genNode(node.codegenNode, context)
+            break
     }
 }
 
