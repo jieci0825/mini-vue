@@ -55,7 +55,19 @@ export function transformText(node, context) {
         node.type === NodeTypes.FOR ||
         node.type === NodeTypes.IF_BRANCH
     ) {
+        // 在 exit 的时期执行
+        // 下面的逻辑会改变 ast 树
+        // 有些逻辑是需要在改变之前做处理的
         return () => {
+            // hi,{{msg}}
+            // 上面的模块会生成2个节点，一个是 text 一个是 interpolation 的话
+            // 生成的 render 函数应该为 "hi," + _toDisplayString(_ctx.msg)
+            // 这里面就会涉及到添加一个 “+” 操作符
+            // 那这里的逻辑就是处理它
+
+            // 检测下一个节点是不是 text 类型，如果是的话， 那么会创建一个 COMPOUND 类型
+            // COMPOUND 类型把 2个 text || interpolation 包裹（相当于是父级容器）
+
             const children = node.children
             let currentContainer
             for (let i = 0; i < children.length; i++) {
