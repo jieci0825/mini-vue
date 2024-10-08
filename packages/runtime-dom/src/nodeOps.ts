@@ -22,6 +22,7 @@ export const nodeOps = {
         el.textContent = text
     },
     remove: (child: Element) => {
+        if (!child) return
         const parent = child.parentNode
         if (parent) {
             parent.removeChild(child)

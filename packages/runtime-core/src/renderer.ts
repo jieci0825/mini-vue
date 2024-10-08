@@ -1,6 +1,6 @@
 import { ShapeFlags } from 'packages/shared/src/shapFlags'
 import { Comment, Fragment, isSameVNodeType, Text, VNode } from './vnode'
-import { EMPTY_ARR, EMPTY_OBJ, isFunction } from '@vue/shared'
+import { EMPTY_ARR, EMPTY_OBJ, isFunction, isString } from '@vue/shared'
 import { type ComponentInstance, createComponentInstance, setupComponent } from './component'
 import { ReactiveEffect } from 'packages/reactivity/src/effect'
 import { queuePreFlushCbs } from './scheduler'
@@ -132,13 +132,13 @@ function baseCreateRenderer(options: RendererOptions): baseCreateRendererReturn 
      * 挂载 children
      */
     function mountChildren(children: VNode[], container: CustomElement, anchor?: any) {
-        // children 可能是数组也可能是字符串
-        if (children && children.length) {
-            for (let child of children) {
-                // 标准化 vnode，如果是一个 string 也会被封装成 Text 类型的 vnode
-                child = normalizeVNode(child)
-                patch(null, child, container, anchor)
-            }
+        // 处理 Cannot assign to read only property '0' of string 'xxx'
+        if (isString(children)) {
+            children = children.split('').map(item => normalizeVNode(item))
+        }
+        for (let i = 0; i < children.length; i++) {
+            const child = (children[i] = normalizeVNode(children[i]))
+            patch(null, child, container, anchor)
         }
     }
 
@@ -333,8 +333,12 @@ function baseCreateRenderer(options: RendererOptions): baseCreateRendererReturn 
             // 如果新节点和旧节点的children都是数组，则进行 diff 算法
             if (prevShapeFlag & ShapeFlags.ARRAY_CHILDREN) {
                 if (shapeFlag & ShapeFlags.ARRAY_CHILDREN) {
-                    // todo 完成辨认 vnode 是否具备 key 属性，不具备 key 属性的，则使用双端比较
-                    patchKeyChildren(c1, c2, container, anchor)
+                    // 进行简略的判断，只要两个子数组第一个数据有 key 属性，即表示都有 key
+                    if (c1[0]?.key && c2[0]?.key) {
+                        patchKeyChildren(c1, c2, container, anchor)
+                    } else {
+                        patchUnkeyedChildren(c1, c2, container, anchor)
+                    }
                 }
                 // 新节点的 children 不是一个数组，也不是一个文本节点，则需要进行卸载，则卸载旧节点的 children
                 else {
@@ -354,6 +358,35 @@ function baseCreateRenderer(options: RendererOptions): baseCreateRendererReturn 
                     mountChildren(c2, container, anchor)
                 }
             }
+        }
+    }
+
+    /**
+     * 处理虚拟节点没有key时，进行 diff 算法
+     */
+    function patchUnkeyedChildren(c1: VNode[], c2: VNode[], container: CustomElement, anchor: any) {
+        const oldLen = c1.length
+        const newLen = c2.length
+
+        // 获取新旧数组的最小长度
+        const minLen = Math.min(oldLen, newLen)
+
+        // 根据最小长度来进行遍历公共节点部分。进行 patch
+        for (let i = 0; i < minLen; i++) {
+            const oldVNode = c1[i]
+            const newVNode = normalizeVNode(c2[i])
+            patch(oldVNode, newVNode, container, anchor)
+        }
+
+        // 公共节点对比完后的处理
+        //  - 如果 c1 大于 c2 则存在多余的旧节点，进行卸载
+        if (oldLen > newLen) {
+            unmountChildren(c1.slice(minLen))
+        }
+
+        //  - 如果 c1 小于 c2，则表示需要新增元素
+        if (oldLen < newLen) {
+            mountChildren(c2.slice(minLen), container, anchor)
         }
     }
 

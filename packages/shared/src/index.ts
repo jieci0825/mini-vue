@@ -34,6 +34,10 @@ export const extend: typeof Object.assign = Object.assign
 export const EMPTY_OBJ: { readonly [key: string]: any } = {}
 export const EMPTY_ARR: readonly never[] = []
 
+export function hasKey(value): boolean {
+    return value !== null && value !== undefined && !isString(value) && !!value.key
+}
+
 /**
  * 新旧两个值是否有变化
  * @param oldValue 旧值

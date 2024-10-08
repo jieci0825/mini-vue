@@ -22,6 +22,9 @@ export function renderComponentRoot(instance: ComponentInstance) {
     return result
 }
 
+/**
+ * 标准化 VNode
+ */
 export function normalizeVNode(child) {
     if (isObject(child)) {
         return cloneIfMounted(child)
@@ -30,6 +33,9 @@ export function normalizeVNode(child) {
     }
 }
 
+/**
+ * clone VNode
+ */
 export function cloneIfMounted(child) {
     return child
 }
