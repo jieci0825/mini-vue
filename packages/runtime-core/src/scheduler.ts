@@ -7,6 +7,10 @@ const pendingPreFlushCbs: Function[] = []
 // 一个已解决的Promise
 const resolvedPromise = Promise.resolve() as Promise<any>
 
+export function nextTick(fn?) {
+    return fn ? resolvedPromise.then(fn) : resolvedPromise
+}
+
 // 将任务推入挂起队列
 export function queuePreFlushCbs(cb: Function) {
     queueCb(cb, pendingPreFlushCbs)

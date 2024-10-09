@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Document</title>
+</head>
+
+<body>
+    <div id="app"></div>
+
+    <script src="../../dist/mini-vue.js"></script>
+    <script>
+        const { compile, h, render } = MiniVue
+
+        const template = `<div>
+            <span>莫道桑榆晚，为霞尚满天。</span>
+            <h1 v-if="isShow">午梦千山，窗阴一箭</h1>
+        </div>`
+
+        const renderFn = compile(template)
+
+        console.log(renderFn.toString())
+
+        const component = {
+            data() {
+                return {
+                    isShow: true
+                }
+            },
+            render: renderFn,
+            created() {
+                window.toggleShow = () => {
+                    this.isShow = !this.isShow
+                }
+            }
+        }
+
+        const vnode = h(component)
+
+        render(vnode, document.querySelector('#app'))
+    </script>
+</body>
+
+</html>

@@ -180,6 +180,11 @@ function parseTag(context: ParseContext, type: TagType): ElementNode {
     // 移动指针-得到标签名称之后，就应该把标签名和前面的 < 符号都吃掉(<div)
     advanceBy(context, len)
 
+    advanceSpaces(context)
+    // * 处理标签的属性-包括指令、事件、普通属性等
+    // -> 这里需要判断一下，当前标签是开始标签还是结束标签，因为只有开始标签才有属性
+    let props = type === TagType.Start ? parseAttributes(context, type) : []
+
     // 判断当前标签是否是一个自闭合的标签 <input /> | <div></div>
     let isSelfClosing = startsWith(context.source, '/>')
     // 根据判断的结果，移动指针。自闭合两位，非自闭合一位
@@ -191,8 +196,119 @@ function parseTag(context: ParseContext, type: TagType): ElementNode {
         type: NodeTypes.ELEMENT,
         tag,
         tagType: ElementTypes.ELEMENT,
-        props: [],
+        props,
         children: []
+    }
+}
+
+function parseAttributes(context: ParseContext, type: TagType) {
+    const props: any = []
+
+    const attributeNames = new Set<string>()
+    while (context.source.length > 0 && !startsWith(context.source, '>') && !startsWith(context.source, '/>')) {
+        const attr = parseAttribute(context, attributeNames)
+        // 只有开始标签才有属性
+        if (type === TagType.Start) {
+            props.push(attr)
+        }
+        // 吃掉每个属性之间的空白
+        advanceSpaces(context)
+    }
+
+    return props
+}
+
+function parseAttribute(context: ParseContext, attributeNames: Set<string>) {
+    // 获取属性名称。例如：['v-if', index: 0, input: 'v-if="isShow">午梦千山，窗阴一箭</h1>\n </div>', groups: undefined]
+    const match = /^[^\t\r\n\f />][^\t\r\n\f />=]*/.exec(context.source)!
+    // 获取指令名称
+    const name = match[0]
+
+    // 加入指令名
+    attributeNames.add(name)
+    // 吃掉指令名称
+    advanceBy(context, name.length)
+
+    // 获取对应的属性值
+    let value: any = undefined
+
+    // 解析模板，并拿到对应的属性值节点
+    if (/^[\t\r\n\f ]*=/.test(context.source)) {
+        advanceSpaces(context) // 吃掉空白
+        advanceBy(context, 1) // 吃掉 =
+        advanceSpaces(context) // 吃掉空白
+        value = parseAttributeValue(context)
+    }
+
+    // 针对 v- 的指令处理
+    if (/^(v-[A-Za-z0-9-]|:|\.|@|#)/.test(name)) {
+        // 获取指令名称
+        const match = /(?:^v-([a-z0-9-]+))?(?:(?::|^\.|^@|^#)(\[[^\]]+\]|[^\.]+))?(.+)?$/i.exec(name)!
+        console.log(match)
+
+        // 获取指令名称
+        const dirName = match[1] // if
+        // todo 获取指令参数 v-bind:xxx="object" 中的 xxx
+        // let arg: any
+
+        // todo 获取修饰符 v-on:click.stop
+        // const modifiers: string[] = []
+
+        return {
+            type: NodeTypes.DIRECTIVE,
+            name: dirName,
+            exp: value && {
+                type: NodeTypes.SIMPLE_EXPRESSION,
+                content: value.content,
+                isStatic: false,
+                loc: value.loc
+            },
+            arg: undefined,
+            modifiers: [],
+            loc: {}
+        }
+    }
+
+    // 获取普通属性
+    return {
+        type: NodeTypes.ATTRIBUTE,
+        name,
+        value: value && {
+            type: NodeTypes.TEXT,
+            content: value.content,
+            loc: value.loc
+        },
+        loc: {}
+    }
+}
+
+/**
+ * 获取属性的属性值
+ */
+function parseAttributeValue(context: ParseContext) {
+    let content = ''
+    // 判断是单引号还是双引号
+    const quote = context.source[0]
+    const isQuoted = quote === `"` || quote === `'`
+
+    // 处理引号
+    if (isQuoted) {
+        advanceBy(context, 1) // 吃掉引号
+        // 获取本次引号结束的 index
+        const endIndex = context.source.indexOf(quote)
+        // 获取引号内的内容
+        if (endIndex > -1) {
+            content = parseTextData(context, endIndex)
+            advanceBy(context, 1) // 吃掉引号
+        } else {
+            content = parseTextData(context, context.source.length)
+        }
+    }
+
+    return {
+        content,
+        loc: {},
+        isQuoted
     }
 }
 
@@ -212,14 +328,9 @@ function isEnd(context: ParseContext): boolean {
  * @description 结束标签通常形如 </div>，这个函数的主要作用就是判断字符串是否以 </ 开始，并且紧接着是某个标签名。
  */
 function startsWithEndTagOpen(source: string, tag: string): boolean {
-    // source.startsWith('</')：判断字符串是否以 </ 开头，标志着可能是一个结束标签
-    // source.slice(2, 2 + tag.length).toLowerCase() === tag.toLowerCase()：从 </ 开始后，继续检查接下来的字符串是否与传入的标签名匹配（不区分大小写）
-    // /[\t\n\f />]/.test(source[2 + tag.length] || '>')：确保结束标签名后面的字符是合法的结束标签字符（如空格、换行符、> 等
-    return (
-        startsWith(source, '</') &&
-        source.slice(2, 2 + tag.length).toLowerCase() === tag.toLowerCase() &&
-        /[\t\n\f />]/.test(source[2 + tag.length] || '>')
-    )
+    // 1. 头部 是不是以  </ 开头的
+    // 2. 进行比对，当前源码的标签名称，是不是和 tag 一样
+    return startsWith(source, '</') && source.slice(2, 2 + tag.length).toLowerCase() === tag.toLowerCase()
 }
 
 /**
@@ -228,4 +339,14 @@ function startsWithEndTagOpen(source: string, tag: string): boolean {
  */
 function advanceBy(context: ParseContext, numberOfChars: number) {
     context.source = context.source.slice(numberOfChars)
+}
+
+/**
+ * 吃掉空白部分
+ */
+function advanceSpaces(context: ParseContext) {
+    const match = /^[\t\r\n\f ]+/.exec(context.source)
+    if (match) {
+        advanceBy(context, match[0].length)
+    }
 }

@@ -139,7 +139,6 @@ function genNode(node, context: CodegenContext) {
             break
         // 元素
         case NodeTypes.ELEMENT:
-            console.log('处理 Element', node)
             genNode(node.codegenNode, context)
             break
     }
