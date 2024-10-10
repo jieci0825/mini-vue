@@ -8,3 +8,10 @@ export function isText(value: any): value is TextNode | InterpolationNode {
 export function getVNodeHelper(ssr: boolean, isComponent: boolean) {
     return ssr || isComponent ? CREATE_VNODE : CREATE_ELEMENT_VNODE
 }
+
+/**
+ * 返回 vnode 节点
+ */
+export function getMemoedVNodeCall(node) {
+    return node
+}

@@ -183,7 +183,7 @@ function parseTag(context: ParseContext, type: TagType): ElementNode {
     advanceSpaces(context)
     // * 处理标签的属性-包括指令、事件、普通属性等
     // -> 这里需要判断一下，当前标签是开始标签还是结束标签，因为只有开始标签才有属性
-    let props = type === TagType.Start ? parseAttributes(context, type) : []
+    let props = parseAttributes(context, type)
 
     // 判断当前标签是否是一个自闭合的标签 <input /> | <div></div>
     let isSelfClosing = startsWith(context.source, '/>')
@@ -244,7 +244,6 @@ function parseAttribute(context: ParseContext, attributeNames: Set<string>) {
     if (/^(v-[A-Za-z0-9-]|:|\.|@|#)/.test(name)) {
         // 获取指令名称
         const match = /(?:^v-([a-z0-9-]+))?(?:(?::|^\.|^@|^#)(\[[^\]]+\]|[^\.]+))?(.+)?$/i.exec(name)!
-        console.log(match)
 
         // 获取指令名称
         const dirName = match[1] // if

@@ -1,3 +1,4 @@
+import { isString } from '@vue/shared'
 import { CREATE_ELEMENT_VNODE, CREATE_VNODE } from './runtimeHelpers'
 import { TransformContext } from './transform'
 
@@ -155,5 +156,66 @@ export function createCompoundExpression(children: CompoundExpressionNode['child
     return {
         type: NodeTypes.COMPOUND_EXPRESSION,
         children
+    }
+}
+
+/**
+ * 创建条件表达式节点
+ */
+export function createConditionalExpression(test, consequent, alternate, newline = true) {
+    return {
+        type: NodeTypes.JS_CONDITIONAL_EXPRESSION,
+        test,
+        consequent,
+        alternate,
+        newline,
+        loc: {}
+    }
+}
+
+/**
+ * 创建调用表达式的节点
+ */
+export function createCallExpression(callee, args) {
+    return {
+        type: NodeTypes.JS_CALL_EXPRESSION,
+        loc: {},
+        callee,
+        arguments: args
+    }
+}
+
+/**
+ * 创建简单的表达式节点
+ */
+export function createSimpleExpression(content, isStatic) {
+    return {
+        type: NodeTypes.SIMPLE_EXPRESSION,
+        loc: {},
+        content,
+        isStatic
+    }
+}
+
+/**
+ * 创建对象属性节点
+ */
+export function createObjectProperty(key, value) {
+    return {
+        type: NodeTypes.JS_PROPERTY,
+        loc: {},
+        key: isString(key) ? createSimpleExpression(key, true) : key,
+        value
+    }
+}
+
+/**
+ * 创建对象表达式节点
+ */
+export function createObjectExpression(properties) {
+    return {
+        type: NodeTypes.JS_OBJECT_EXPRESSION,
+        loc: {},
+        properties
     }
 }

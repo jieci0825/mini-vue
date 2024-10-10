@@ -117,6 +117,10 @@ export function generate(ast) {
 
 function genNode(node, context: CodegenContext) {
     switch (node.type) {
+        case NodeTypes.ELEMENT:
+        case NodeTypes.IF:
+            genNode(node.codegenNode!, context)
+            break
         // 元素
         case NodeTypes.VNODE_CALL:
             genVNodeCall(node, context)
@@ -141,7 +145,75 @@ function genNode(node, context: CodegenContext) {
         case NodeTypes.ELEMENT:
             genNode(node.codegenNode, context)
             break
+        // JS调用表达式的处理
+        case NodeTypes.JS_CALL_EXPRESSION:
+            genCallExpression(node, context)
+            break
+        // js 条件表达式
+        case NodeTypes.JS_CONDITIONAL_EXPRESSION:
+            genConditionalExpression(node, context)
+            break
     }
+}
+
+/**
+ * JS调用表达式的处理
+ */
+function genCallExpression(node, context) {
+    const { push, helper } = context
+    const callee = isString(node.callee) ? node.callee : helper(node.callee)
+
+    push(callee + `(`, node)
+    genNodeList(node.arguments, context)
+    push(`)`)
+}
+
+/**
+ * JS条件表达式的处理。
+ * 例如：
+ *  isShow
+        ? _createElementVNode("h1", null, ["你好，世界"])
+        : _createCommentVNode("v-if", true),
+ */
+function genConditionalExpression(node, context) {
+    const { test, consequent, alternate, newline: needNewline } = node
+    const { push, indent, deindent, newline } = context
+    if (test.type === NodeTypes.SIMPLE_EXPRESSION) {
+        // 写入变量
+        genExpression(test, context)
+    }
+    // 换行
+    needNewline && indent()
+    // 缩进++
+    context.indentLevel++
+    // 写入空格
+    needNewline || push(` `)
+    // 写入 ？
+    push(`? `)
+    // 写入满足条件的处理逻辑
+    genNode(consequent, context)
+    // 缩进 --
+    context.indentLevel--
+    // 换行
+    needNewline && newline()
+    // 写入空格
+    needNewline || push(` `)
+    // 写入:
+    push(`: `)
+    // 判断 else 的类型是否也为 JS_CONDITIONAL_EXPRESSION
+    const isNested = alternate.type === NodeTypes.JS_CONDITIONAL_EXPRESSION
+    // 不是则缩进++
+    if (!isNested) {
+        context.indentLevel++
+    }
+    // 写入 else （不满足条件）的处理逻辑
+    genNode(alternate, context)
+    // 缩进--
+    if (!isNested) {
+        context.indentLevel--
+    }
+    // 控制缩进 + 换行
+    needNewline && deindent(true /* without newline */)
 }
 
 function genCompoundExpression(node: CompoundExpressionNode, context: CodegenContext) {
@@ -182,13 +254,13 @@ function genVNodeCall(node, context) {
     // 处理参数
     const args = getNullableArgs([tag, props, children, patchFlag, dynamicProps])
 
-    getNodeList(args, context)
+    genNodeList(args, context)
 
     // 添加小括号，函数调用闭合
     push(')')
 }
 
-function getNodeList(nodes, context: CodegenContext) {
+function genNodeList(nodes, context: CodegenContext) {
     const { push } = context
     for (let i = 0; i < nodes.length; i++) {
         const node = nodes[i]
@@ -198,7 +270,7 @@ function getNodeList(nodes, context: CodegenContext) {
         }
         // 数组时
         else if (isArray(node)) {
-            getNodeListAsArray(node, context)
+            genNodeListAsArray(node, context)
         }
         // 若为对象递归处理
         else {
@@ -211,10 +283,10 @@ function getNodeList(nodes, context: CodegenContext) {
     }
 }
 
-function getNodeListAsArray(nodes, context: CodegenContext) {
+function genNodeListAsArray(nodes, context: CodegenContext) {
     const { push } = context
     push('[')
-    getNodeList(nodes, context)
+    genNodeList(nodes, context)
     push(']')
 }
 
