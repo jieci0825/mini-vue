@@ -1,0 +1,27 @@
+# Vue3源码解析-前言
+
+> 与其说实现了一个 mini-vue，不如说是阅读《Vue.js设计与实现》这本书的笔记，有时间的可以去阅读一下，很不错的一本书。
+> 本文档记录了 mini-vue 的实现过程，如果你有兴趣了解本项目，搭配文档一起阅读效果更佳。
+> 在项目中采用了 TypeScript，但是在文档中发复述，为了方便阅读和理解，就没有采用，使用原生 JavaScript
+
+## 文档介绍
+
+本文档主要记录三个模块的实现：reactive、runtime、compiler
+
+## 文档目录
+### reactive
+- [x] [认识响应式数据与副作用函数](./响应式系统/1.%20响应式数据与副作用函数.md)
+- [x] reactive
+- [x] effect
+- [x] computed
+- [x] ref
+- [x] readonly
+- [x] shallowReadonly
+- [x] customRef
+
+### runtime
+- [x] createApp
+- [x] h
+- [x] render
+- [x] component
+- [x] props
