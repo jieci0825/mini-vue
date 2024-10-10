@@ -9,19 +9,17 @@
 本文档主要记录三个模块的实现：reactive、runtime、compiler
 
 ## 文档目录
+
+> 每个模块都可以单独阅读，但是建议按照自上而下的顺序阅读
+
 ### reactive
 - [x] [认识响应式数据与副作用函数](./响应式系统/1.%20响应式数据与副作用函数.md)
 - [x] reactive
 - [x] effect
 - [x] computed
 - [x] ref
-- [x] readonly
-- [x] shallowReadonly
-- [x] customRef
+- [x] watch
 
 ### runtime
-- [x] createApp
-- [x] h
-- [x] render
-- [x] component
-- [x] props
+
+### compiler
