@@ -1,0 +1,10 @@
+{
+    "compilerOptions": {
+        "baseUrl": ".", // 设置根目录
+        "paths": {
+            "@vue/*": ["packages/*/src"]
+        },
+        "esModuleInterop": true
+    },
+    "include": ["packages/*/src"] // 指定要包含的文件
+}
