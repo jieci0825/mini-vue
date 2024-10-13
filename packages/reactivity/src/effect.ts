@@ -47,6 +47,7 @@ export class ReactiveEffect<T = any> {
     run() {
         try {
             activeEffect = this
+            cleanupEffect(this)
             effectStack.push(this)
             // 执行 fn，收集依赖
             return this.fn()
@@ -133,17 +134,18 @@ export function trigger(target: object, type: TriggerOpType, key: unknown, newVa
  */
 export function triggerEffects(deps: Dep) {
     if (!deps) return
-    // 依次触发
-    for (const effect of deps) {
-        // !此处清除会出现死循环，待解决
-        // cleanupEffect(effect)
 
+    // 依次触发
+
+    // 重新构造一个 Set 集合，防止死循环
+    const effects = new Set(deps)
+
+    effects.forEach(effect => {
         // 如果当前 effect 等于 activeEffect，则跳过
-        if (effect === activeEffect) {
-            continue
+        if (effect !== activeEffect) {
+            triggerEffect(effect)
         }
-        triggerEffect(effect)
-    }
+    })
 }
 
 /**

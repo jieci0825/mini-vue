@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Document</title>
+</head>
+
+<body>
+  <script src="../../dist/mini-vue.js"></script>
+  <script>
+    const { reactive, effect } = MiniVue
+
+    const obj = reactive({ ok: true, text: '我是清都山水郎，天教分付与疏狂' })
+
+    effect(() => {
+      console.log('effect run')
+      document.body.innerHTML = obj.ok ? obj.text : 'not'
+    })
+
+    setTimeout(() => {
+      console.log('setTimeout1')
+      obj.ok = false
+    }, 2000)
+
+    setTimeout(() => {
+      console.log('setTimeout2')
+      obj.text = '须知少日拏云志,曾许人间第一流'
+    }, 4000)
+
+  </script>
+</body>
+
+</html>
