@@ -28,7 +28,9 @@ export function trigger(target, key) {
   const effetsToRun = new Set(effects)
   if (effetsToRun) {
     effetsToRun.forEach(effect => {
-      effect.run()
+      if (effect !== activeEffect) {
+        effect.run()
+      }
     })
   }
 }
