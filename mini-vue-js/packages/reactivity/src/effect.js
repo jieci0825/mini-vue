@@ -25,12 +25,16 @@ export function trigger(target, key) {
   const effects = depsMap.get(key)
 
   // 重新构造一个 set 集合，防止在执行过程中，发生无线递归
-  const effetsToRun = new Set(effects)
+  const effetsToRun = new Set()
+  effects &&
+    effects.forEach(effect => {
+      if (effect !== activeEffect) {
+        effetsToRun.add(effect)
+      }
+    })
   if (effetsToRun) {
     effetsToRun.forEach(effect => {
-      if (effect !== activeEffect) {
-        effect.run()
-      }
+      effect.run()
     })
   }
 }
