@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Document</title>
+</head>
+
+<body>
+  <script src="../../dist/mini-vue.js"></script>
+  <script>
+    const { reactive, computed, effect } = MiniVue
+
+    const obj = reactive({
+      a: 1
+    })
+
+    const double = computed(() => {
+      console.log('computed 执行了')
+      return obj.a * 2
+    })
+
+    // 测试 computed 在模板中的使用
+    effect(() => {
+      console.log('模拟在模板中使用计算属性 double: ', double.value)
+    })
+
+    // 测试缓存
+    // console.log(double.value)
+    // console.log(double.value)
+    // console.log(double.value)
+
+    // 测试响应式
+    obj.a = 2
+    console.log(double.value)
+
+  </script>
+</body>
+
+</html>

@@ -3,7 +3,7 @@ import { extend } from '@vue/shared'
 const targetMap = new WeakMap()
 
 // 当前激活的effect实例
-let activeEffect = null
+export let activeEffect = null
 const effectStack = []
 
 export function track(target, key) {
@@ -16,6 +16,10 @@ export function track(target, key) {
   if (!deps) {
     depsMap.set(key, (deps = new Set()))
   }
+  trackEffects(deps)
+}
+
+export function trackEffects(deps) {
   deps.add(activeEffect)
   // 将依赖集合 deps 加入到当前激活的 effect 函数的 depSetList 中
   activeEffect.depSetList.push(deps)
@@ -25,23 +29,43 @@ export function trigger(target, key) {
   const depsMap = targetMap.get(target)
   if (!depsMap) return
   const effects = depsMap.get(key)
+  triggerEffects(effects)
+}
+
+/**
+ * 批量执行副作用实例
+ * @param {Set<object>} effects 即 deps(deps 里面存储的就是一个个 effect 实例)
+ * @returns
+ */
+export function triggerEffects(effects) {
+  if (!effects) return
 
   // 重新构造一个 set 集合，防止在执行过程中，发生无线递归
   const effetsToRun = new Set()
-  effects &&
+  if (effects) {
     effects.forEach(effect => {
+      // 遍历加入时进行边界处理，effect如果是当前正在执行的实例，则无需再添加到新的集合中
       if (effect !== activeEffect) {
         effetsToRun.add(effect)
       }
     })
-  if (effetsToRun) {
-    effetsToRun.forEach(effect => {
-      if (effect.scheduler) {
-        effect.scheduler(effect)
-      } else {
-        effect.run()
-      }
-    })
+    if (effetsToRun) {
+      effetsToRun.forEach(effect => {
+        triggerEffect(effect)
+      })
+    }
+  }
+}
+
+/**
+ * 处理单个副作用实例
+ * @param {object} effect
+ */
+export function triggerEffect(effect) {
+  if (effect.scheduler) {
+    effect.scheduler(effect)
+  } else {
+    effect.run()
   }
 }
 
@@ -63,7 +87,7 @@ export function effect(fn, options = {}) {
   return effect
 }
 
-class ReactiveEffect {
+export class ReactiveEffect {
   constructor(fn, scheduler) {
     // 保存当前的effect函数
     this.fn = fn

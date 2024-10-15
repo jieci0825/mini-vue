@@ -1,3 +1,3 @@
 export { queuePreFlushCbs } from '@vue/runtime-core'
-export { effect, reactive } from '@vue/reactivity'
+export { effect, reactive, computed } from '@vue/reactivity'
 export * from '@vue/shared'
