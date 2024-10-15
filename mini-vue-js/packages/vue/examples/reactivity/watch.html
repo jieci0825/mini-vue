@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Document</title>
+</head>
+
+<body>
+  <script src="../../dist/mini-vue.js"></script>
+  <script>
+    const { reactive, computed, effect, watch } = MiniVue
+
+    const state = reactive({
+      a: 1,
+      b: 2
+    })
+
+    // watch(state, (newValue, oldValue) => {
+    //   console.log('watch', newValue, oldValue)
+    // })
+
+    // state.a++
+    // state.b++
+
+    watch(() => state.a, (newValue, oldValue) => {
+      console.log('watch', newValue, oldValue)
+    }, {
+      // immediate: true
+      flush: 'post'
+    })
+
+    state.a++
+
+    let count = 0
+    watch(
+      () => state.b,
+      (newValue, oldValue, onInvalidate) => {
+        count++
+
+        const _count = count
+
+        let expired = false
+
+        onInvalidate(() => {
+          expired = true
+        })
+
+        // 模拟请求
+        setTimeout(() => {
+          if (!expired) {
+            console.log(`请求${_count}-结束了-正常赋值`)
+          } else {
+            console.log(`请求${_count}-结束了-过期了`)
+          }
+        }, 5000 - count * 1000)
+      }
+    )
+    state.b++
+    setTimeout(() => {
+      state.b++
+    }, 200)
+  </script>
+</body>
+
+</html>

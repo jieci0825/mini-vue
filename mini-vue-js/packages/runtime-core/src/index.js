@@ -1,1 +1,2 @@
-export { queuePreFlushCbs } from './scheduler'
+export { watch } from './apiWatch'
+export { queuePreFlushCbs, nextTick } from './scheduler'

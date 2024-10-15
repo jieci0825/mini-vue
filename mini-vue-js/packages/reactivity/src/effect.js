@@ -88,6 +88,10 @@ export function effect(fn, options = {}) {
 }
 
 export class ReactiveEffect {
+  /**
+   * @param {Function} fn
+   * @param {Function} scheduler
+   */
   constructor(fn, scheduler) {
     // 保存当前的effect函数
     this.fn = fn

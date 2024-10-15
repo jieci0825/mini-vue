@@ -3,6 +3,10 @@ const p = Promise.resolve()
 
 let isFlushing = false
 
+export function nextTick(fn) {
+  return fn ? p.then(fn) : p
+}
+
 /**
  * 刷新任务队列
  */
