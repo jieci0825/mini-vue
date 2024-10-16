@@ -19,7 +19,7 @@
 - [x] [实现调度执行](./响应式系统/04_实现调度执行.md)
 - [x] [计算属性computed和lazy](./响应式系统/05_计算属性computed和lazy.md)
 - [x] [实现watch](./响应式系统/06_实现watch.md)
-- [x] [扩展-处理其他操作符的拦截(X)](./响应式系统/xx_扩展-处理其他操作符的拦截.md)
+- [x] [理解Proxy和Reflect](./响应式系统/07_理解Proxy和Reflect.md)
 
 ### runtime
 
