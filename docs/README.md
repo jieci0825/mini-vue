@@ -20,6 +20,8 @@
 - [x] [计算属性computed和lazy](./响应式系统/05_计算属性computed和lazy.md)
 - [x] [实现watch](./响应式系统/06_实现watch.md)
 - [x] [理解Proxy和Reflect](./响应式系统/07_理解Proxy和Reflect.md)
+- [x] [实现reactive](./响应式系统/08_实现reactive.md)
+- [x] [实现readonly](./响应式系统/09_实现readonly.md)
 
 ### runtime
 
