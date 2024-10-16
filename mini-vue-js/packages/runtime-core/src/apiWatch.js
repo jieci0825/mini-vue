@@ -7,7 +7,7 @@ export function watch(source, cb, options = {}) {
   if (isFunction(source)) {
     getter = source
   } else {
-    getter = () => traverse(source)
+    getter = () => traverse(source, !!options.deep)
   }
 
   let oldValue, newValue
@@ -45,11 +45,15 @@ export function watch(source, cb, options = {}) {
   }
 }
 
-function traverse(value, seen = new Set()) {
+function traverse(value, deep = true, seen = new Set()) {
   if (!isObject(value) || value == null || seen.has(value)) return
   seen.add(value)
   for (const key in value) {
-    traverse(value[key], seen)
+    if (deep) {
+      traverse(value[key], deep, seen)
+    } else {
+      value[key]
+    }
   }
   return value
 }

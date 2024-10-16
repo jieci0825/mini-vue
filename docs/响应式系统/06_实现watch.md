@@ -170,6 +170,33 @@ objProxy.a++
 
 ![image-20241015170352831](./06_实现watch.assets/image-20241015170352831.png)
 
+## 深度监听
+
+其实这一点我们已经实现了，上述中我们的 traverse 本身便是深度的递归，所以我们只需要简单的处理一下即可完成这个选项，代码如下：
+
+```javascript
+let getter
+if (typeof source === 'function') {
+	getter = source
+} else {
+	getter = () => {
+		// 根据传递选项来判断是否进行递归读取
+		if (options.deep) {
+			return traverse(source)
+		} else {
+			// 直接只遍历一层即可
+			for (const key in source) {
+				source[key]
+			}
+			// 返回source本身
+			return source
+		}
+	}
+}
+```
+
+当然，为了直观的展示变化，这里只展示了变动的一部分代码，或者也可以对 traverse 进行增强，可以实现服用。
+
 ## watch 的立即执行和回调执行时机
 
 在默认情况下，watch 函数只有在监听的响应式数据发生变化时才会触发回调，在 Vue 中，可以通过指定第三个参数的选项 immediate 为 true 实现 watch 函数在创建时立即执行一次。
