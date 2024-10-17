@@ -11,6 +11,7 @@
 ## 文档目录
 
 > 每个模块都可以单独阅读，但是建议按照自上而下的顺序阅读。至于工程目录结构，没有什么难点的地方，自行阅读项目建立即可。
+> 标注扩展表示可选择阅读的内容
 
 ### reactive
 - [x] [认识响应式数据与副作用函数](./响应式系统/01_响应式数据与副作用函数.md)
@@ -21,7 +22,8 @@
 - [x] [实现watch](./响应式系统/06_实现watch.md)
 - [x] [理解Proxy和Reflect](./响应式系统/07_理解Proxy和Reflect.md)
 - [x] [实现reactive](./响应式系统/08_实现reactive.md)
-- [x] [实现readonly](./响应式系统/09_实现readonly.md)
+- [x] [扩展-实现reactive之代理Set和Map](./响应式系统/09_实现reactive之代理Set和Map_.md)
+- [x] [扩展-实现readonly](./响应式系统/10_实现readonly.md)
 
 ### runtime
 
