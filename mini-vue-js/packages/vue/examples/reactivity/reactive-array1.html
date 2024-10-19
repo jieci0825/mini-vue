@@ -1,0 +1,30 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Document</title>
+</head>
+
+<body>
+  <div id="app"></div>
+  <script src="../../dist/mini-vue.js"></script>
+
+  <script>
+    const { reactive, effect } = MiniVue
+
+    const arr = [1]
+    const a1 = reactive(arr)
+
+    effect(() => {
+      console.log('effect: ', a1.length)
+    })
+
+    // 设置索引为1的值，则长度也变为 2
+    a1[1] = 4
+    console.log(a1.length)
+  </script>
+</body>
+
+</html>

@@ -1,13 +1,24 @@
-import { extend } from '@vue/shared'
+import { extend, isArray } from '@vue/shared'
+import { TriggerType } from './operations'
+import { ITERATE_KEY } from './constants'
 
 const targetMap = new WeakMap()
+let shouldTrack = true
+
+export function pauseTracking() {
+  shouldTrack = false
+}
+
+export function resumeTracking() {
+  shouldTrack = true
+}
 
 // 当前激活的effect实例
 export let activeEffect = null
 const effectStack = []
 
 export function track(target, key) {
-  if (!activeEffect) return
+  if (!shouldTrack || !activeEffect) return
   let depsMap = targetMap.get(target)
   if (!depsMap) {
     targetMap.set(target, (depsMap = new Map()))
@@ -25,23 +36,50 @@ export function trackEffects(deps) {
   activeEffect.depSetList.push(deps)
 }
 
-export function trigger(target, key) {
+export function trigger(target, key, type, newValue) {
   const depsMap = targetMap.get(target)
   if (!depsMap) return
+
+  // 重新构造一个 set 集合，防止在执行过程中，发生无限递归
+  const effetsToRun = new Set()
+
+  // 添加当前 key 的所有依赖
   const effects = depsMap.get(key)
-  triggerEffects(effects)
+  effects && triggerEffects(effects, effetsToRun)
+
+  // 当设置 length 的值小于等于当前数组索引时，则表示删除了某些元素
+  // 例如 [1,2,3,4,5] 设置了 length = 3，则删除了 4 和 5，那么  4 和 5 的依赖需要被触发
+  if (isArray(target) && key === 'length') {
+    depsMap.forEach((effects, key) => {
+      // 此时 key 为 index
+      if (key >= newValue) {
+        triggerEffects(effects, effetsToRun)
+      }
+    })
+  }
+  // 只有当触发类型为 ADD 或 DELETE 时，才会触发这个迭代行为的依赖
+  if (type === TriggerType.ADD || type === TriggerType.DELETE) {
+    if (isArray(target)) {
+      // 当通过设置过大索引值导致数组长度变化时，手动触发 length 相关依赖
+      const lengthEffects = depsMap.get('length')
+      lengthEffects && triggerEffects(lengthEffects, effetsToRun)
+    } else {
+      // 添加 ITERATE_KEY 的依赖
+      const iterateEffects = depsMap.get(ITERATE_KEY)
+      iterateEffects && triggerEffects(iterateEffects, effetsToRun)
+    }
+  }
 }
 
 /**
  * 批量执行副作用实例
  * @param {Set<object>} effects 即 deps(deps 里面存储的就是一个个 effect 实例)
+ * @param {Set<object>} runSet 执行的集合
  * @returns
  */
-export function triggerEffects(effects) {
+export function triggerEffects(effects, effetsToRun = new Set()) {
   if (!effects) return
 
-  // 重新构造一个 set 集合，防止在执行过程中，发生无线递归
-  const effetsToRun = new Set()
   if (effects) {
     effects.forEach(effect => {
       // 遍历加入时进行边界处理，effect如果是当前正在执行的实例，则无需再添加到新的集合中
@@ -49,6 +87,7 @@ export function triggerEffects(effects) {
         effetsToRun.add(effect)
       }
     })
+
     if (effetsToRun) {
       effetsToRun.forEach(effect => {
         triggerEffect(effect)

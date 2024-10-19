@@ -184,7 +184,7 @@ state.address = 'shanghai'
 
 ![image-20241016163052044](./08_实现reactive.assets/image-20241016163052044.png)
 
-但是现在还有一个问题，就是无差别触发，比如我重新修改年龄，那么此时并不会对，并不会对这个迭代行为产生影响，那么就不应该触发，所以我们需要识别 set 触发时，当前的 key 是新增的还是重新赋值，基于这点我们就可以优化一下代码，如下：
+但是现在还有一个问题，就是无差别触发，比如我重新修改年龄，那么此时并不会对这个迭代行为产生影响，那么就不应该触发，所以我们需要识别 set 触发时，当前的 key 是新增的还是重新赋值，基于这点我们就可以优化一下代码，如下：
 
 ```javascript
 function trigger(target, key, type) {
@@ -825,11 +825,6 @@ console.log(a1.length)
 const noWarnKey = [RAW_KEY, IS_REACTIVE, ITERATE_KEY]
 function baseSet(isReadonly) {
 	return function set(target, key, newVal, receiver) {
-		if (isReadonly && !noWarnKey.includes(key)) {
-			console.warn('只读属性 ', key, ' 禁止修改')
-			return true
-		}
-
 		const oldVal = target[key]
 		const type = Array.isArray.isArray(target)
 			? // 如果代理的目标是数组，则检测 key 是否小于 target.length
@@ -859,11 +854,6 @@ function baseSet(isReadonly) {
 ```javascript
 function baseSet(isReadonly) {
 	return function set(target, key, newVal, receiver) {
-		if (isReadonly && !noWarnKey.includes(key)) {
-			console.warn('只读属性 ', key, ' 禁止修改')
-			return true
-		}
-
 		const oldLen = Array.isArray(target) ? target.length : undefined
 		const oldVal = target[key]
 
@@ -1129,7 +1119,7 @@ const arr = reactive([obj])
 console.log(arr.includes(obj)) // false
 ```
 
-为什么存在的值，但是却表示无法找到呢？在 ECMA 规范中表明，includes 方法会通过索引获取值，而我们这里使用的是 arr，arr 是一个代理，在代理中，如果得到这个值是一个对象的话，则会对这个对象进行代理，那么这个 obj 就变为了 objProxy = Proxy(obj)，这两者之间肯定是不相等的，所以这里是表示在 arr 数组中招一个 objProxy，那肯定就会返回 false，这里我们尽然说是因为再次代理的原因，是不是使用浅响应就可以找到呢，是可以的，代码如下：
+为什么存在的值，但是却表示无法找到呢？在 ECMA 规范中表明，includes 方法会通过索引获取值，而我们这里使用的是 arr，arr 是一个代理，在代理中，如果得到这个值是一个对象的话，则会对这个对象进行代理，那么这个 obj 就变为了 objProxy = Proxy(obj)，这两者之间肯定是不相等的，所以这里 arr 通过 includes 查找的时候，includes 内部通过遍历取值对比，实际执行判断时 arr[0] === obj，`arr[0]是objProxy `，那肯定就会返回 false，这里我们尽然说是因为再次代理的原因，是不是使用浅响应就可以找到呢，是可以的，代码如下：
 
 ```javascript
 const obj = {}

@@ -1,3 +1,3 @@
 export { computed } from './computed'
-export { reactive } from './reactive'
+export { reactive, shallowReactive, readonly } from './reactive'
 export { effect } from './effect'

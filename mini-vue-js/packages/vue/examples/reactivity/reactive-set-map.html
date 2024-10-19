@@ -1,0 +1,30 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Document</title>
+</head>
+
+<body>
+  <div id="app"></div>
+  <script src="../../dist/mini-vue.js"></script>
+
+  <script>
+    const { reactive, effect } = MiniVue
+    const s = reactive(new Set([1, 2, 3]))
+    effect(() => {
+      console.log('effect:', s.size)
+    })
+    s.add(4)
+
+    const m = reactive(new Map([['key', 'value']]))
+    effect(() => {
+      console.log('effect:', m.size)
+    })
+    m.set('key2', 'value2')
+  </script>
+</body>
+
+</html>

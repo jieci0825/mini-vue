@@ -1,0 +1,31 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Document</title>
+</head>
+
+<body>
+  <div id="app"></div>
+  <script src="../../dist/mini-vue.js"></script>
+
+  <script>
+    const { reactive, effect } = MiniVue
+
+    const arr = ['A']
+    const a1 = reactive(arr)
+
+    effect(() => {
+      // 访问数组第一个元素
+      console.log('effect: ', a1[0])
+    })
+
+    // 将数组的长度设置0，则会清空数组
+    a1.length = 0
+    console.log(a1.length)
+  </script>
+</body>
+
+</html>

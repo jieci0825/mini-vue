@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Document</title>
+</head>
+
+<body>
+  <div id="app"></div>
+  <script src="../../dist/mini-vue.js"></script>
+
+  <script>
+    const { reactive, effect, shallowReactive } = MiniVue
+
+    // 测试深响应
+    // const obj = reactive({
+    //   name: '张三',
+    //   otherInfo: {
+    //     address: '北京'
+    //   }
+    // })
+
+    // effect(() => {
+    //   console.log('effect1 run:', obj.otherInfo.address)
+    // })
+
+    // window.update = () => {
+    //   obj.otherInfo.address = '上海'
+    // }
+
+    // 测试浅响应
+    const obj1 = shallowReactive({
+      name: '张三',
+      otherInfo: {
+        address: '北京'
+      }
+    })
+
+    effect(() => {
+      console.log('effect2 run:', obj1.name, obj1.otherInfo.address)
+    })
+
+    window.update1 = () => {
+      obj1.otherInfo.address = '上海'
+    }
+    window.update2 = () => {
+      obj1.name = '李四'
+    }
+  </script>
+</body>
+
+</html>
