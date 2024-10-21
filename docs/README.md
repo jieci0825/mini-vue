@@ -24,6 +24,7 @@
 - [x] [实现reactive](./响应式系统/08_实现reactive.md)
 - [x] [扩展-实现reactive之代理Set和Map](./响应式系统/09_实现reactive之代理Set和Map_.md)
 - [x] [扩展-实现readonly](./响应式系统/10_实现readonly.md)
+- [x] [原始值的响应式方案-ref](./响应式系统/11_原始值的响应式方案-ref.md)
 
 ### runtime
 

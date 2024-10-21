@@ -470,6 +470,9 @@ m.set({ key: 2 }, { value: 2 })
 但是目前还是存在一些缺陷，目前我们是直接将 callback 交给原始对象的 forEach 方法，这就将导致回调函数的参数不是一个响应式数据，从而引发下面这个代码无法预期工作：
 
 ```javascript
+const key = { key: 1 }
+const m = reactive(new Map([[key, new Set([1, 2, 3])]]))
+
 effect(() => {
 	console.log('effect')
 	m.forEach((v, k) => {

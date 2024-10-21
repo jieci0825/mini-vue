@@ -1,13 +1,15 @@
 import {
   hasChanged,
   isArray,
+  isBoolean,
   isMap,
+  isNumber,
   isObject,
   isSet,
   isSymbol
 } from '@vue/shared'
 import { pauseTracking, resumeTracking, track, trigger } from './effect'
-import { ITERATE_KEY, RAW_KEY } from './constants'
+import { ITERATE_KEY, MAP_KEY_ITERATOR_KEY, RAW_KEY } from './constants'
 import { TriggerType } from './operations'
 import { reactive, readonly } from './reactive'
 
@@ -41,7 +43,7 @@ export const mutableInstrumetations = {
       track(target, key)
       if (had) {
         const result = target.get(key)
-        if (result === 'object' && result !== null) {
+        if (isObject(result)) {
           // 如果是只读且是深响应的数据，则调用 readonly
           if (!isShallow && isReadonly) {
             return readonly(result)
@@ -68,9 +70,102 @@ export const mutableInstrumetations = {
       if (!had) {
         trigger(target, key, TriggerType.ADD)
       } else {
-        if (!Object.is(oldValue, value)) {
+        if (hasChanged(oldValue, rawValue)) {
           trigger(target, key, TriggerType.SET)
         }
+      }
+    }
+  },
+  forEach() {
+    return function (callback, thisArg) {
+      const target = this[RAW_KEY]
+      track(target, ITERATE_KEY)
+      target.forEach((v, k) => {
+        callback.call(thisArg, reactive(v), reactive(k), this)
+      })
+    }
+  },
+  [Symbol.iterator]: iterationMethod,
+  entries: iterationMethod,
+  keys: keysIterationMethod,
+  values: valuesIterationMethod
+}
+
+function valuesIterationMethod() {
+  return function () {
+    const target = this[RAW_KEY]
+    const wrap = v => {
+      if (isObject(v)) {
+        return reactive(v)
+      }
+      return v
+    }
+    const iterator = target.values()
+
+    track(target, ITERATE_KEY)
+
+    return {
+      next() {
+        const { value, done } = iterator.next()
+        return {
+          // 仅会获取 value，所以只需要针对 value 进行包装
+          value: wrap(value),
+          done
+        }
+      },
+      [Symbol.iterator]() {
+        return this
+      }
+    }
+  }
+}
+
+function keysIterationMethod() {
+  return function () {
+    const target = this[RAW_KEY]
+    const iterator = target.keys()
+
+    // 更改依赖建立关系
+    track(target, MAP_KEY_ITERATOR_KEY)
+
+    return {
+      next() {
+        const { value, done } = iterator.next()
+        return {
+          value: reactive(value),
+          done
+        }
+      },
+      [Symbol.iterator]() {
+        return this
+      }
+    }
+  }
+}
+
+function iterationMethod() {
+  return function () {
+    const target = this[RAW_KEY]
+    const wrap = v => {
+      if (isObject(v)) {
+        return reactive(v)
+      }
+      return v
+    }
+    const iterator = target[Symbol.iterator]()
+
+    track(target, ITERATE_KEY)
+
+    return {
+      next() {
+        const { value, done } = iterator.next()
+        return {
+          value: value ? [wrap(value[0]), wrap(value[1])] : value,
+          done
+        }
+      },
+      [Symbol.iterator]() {
+        return this
       }
     }
   }
@@ -84,8 +179,8 @@ const arrayInstrumentations = {}
     const proxyResult = Array.prototype[key].apply(this, args)
     // 如果在代理中找到的结果为 true 或者不等于 -1，表示找到了，直接返回
     if (
-      (typeof proxyResult === 'boolean' && proxyResult === true) ||
-      (typeof proxyResult === 'number' && proxyResult !== -1)
+      (isBoolean(proxyResult) && proxyResult === true) ||
+      (isNumber(proxyResult) && proxyResult !== -1)
     ) {
       return proxyResult
     }

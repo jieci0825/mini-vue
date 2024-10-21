@@ -1,6 +1,6 @@
-import { extend, isArray } from '@vue/shared'
+import { extend, isArray, isMap } from '@vue/shared'
 import { TriggerType } from './operations'
-import { ITERATE_KEY } from './constants'
+import { ITERATE_KEY, MAP_KEY_ITERATOR_KEY } from './constants'
 
 const targetMap = new WeakMap()
 let shouldTrack = true
@@ -57,8 +57,23 @@ export function trigger(target, key, type, newValue) {
       }
     })
   }
+
+  // 处理 Map 数据类型的 keys 方法
+  if (
+    (type === TriggerType.ADD || type === TriggerType.DELETE) &&
+    isMap(target)
+  ) {
+    // 取得 Map 数据类型的 keys 方法对应的副作用函数
+    const iterateEffects = depsMap.get(MAP_KEY_ITERATOR_KEY)
+    triggerEffects(iterateEffects, effetsToRun)
+  }
+
   // 只有当触发类型为 ADD 或 DELETE 时，才会触发这个迭代行为的依赖
-  if (type === TriggerType.ADD || type === TriggerType.DELETE) {
+  if (
+    type === TriggerType.ADD ||
+    type === TriggerType.DELETE ||
+    (type === TriggerType.SET && isMap(target))
+  ) {
     if (isArray(target)) {
       // 当通过设置过大索引值导致数组长度变化时，手动触发 length 相关依赖
       const lengthEffects = depsMap.get('length')
@@ -69,6 +84,12 @@ export function trigger(target, key, type, newValue) {
       iterateEffects && triggerEffects(iterateEffects, effetsToRun)
     }
   }
+
+  if (effetsToRun) {
+    effetsToRun.forEach(effect => {
+      triggerEffect(effect)
+    })
+  }
 }
 
 /**
@@ -77,23 +98,15 @@ export function trigger(target, key, type, newValue) {
  * @param {Set<object>} runSet 执行的集合
  * @returns
  */
-export function triggerEffects(effects, effetsToRun = new Set()) {
+export function triggerEffects(effects, effetsToRun) {
   if (!effects) return
 
-  if (effects) {
-    effects.forEach(effect => {
-      // 遍历加入时进行边界处理，effect如果是当前正在执行的实例，则无需再添加到新的集合中
-      if (effect !== activeEffect) {
-        effetsToRun.add(effect)
-      }
-    })
-
-    if (effetsToRun) {
-      effetsToRun.forEach(effect => {
-        triggerEffect(effect)
-      })
+  effects.forEach(effect => {
+    // 遍历加入时进行边界处理，effect如果是当前正在执行的实例，则无需再添加到新的集合中
+    if (effect !== activeEffect) {
+      effetsToRun.add(effect)
     }
-  }
+  })
 }
 
 /**

@@ -1,4 +1,4 @@
-import { activeEffect, trackEffects, triggerEffects } from './effect'
+import { activeEffect, trackEffects } from './effect'
 
 export function trackRefValue(refIns) {
   if (activeEffect) {
@@ -7,6 +7,4 @@ export function trackRefValue(refIns) {
   }
 }
 
-export function triggerRefValue(refIns) {
-  triggerEffects(refIns.deps)
-}
+export function triggerRefValue(refIns) {}

@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Document</title>
+</head>
+
+<body>
+  <div id="app"></div>
+  <script src="../../dist/mini-vue.js"></script>
+
+  <script>
+    const { reactive, effect } = MiniVue
+
+    // case1:
+    // const m = reactive(new Map([[{ key: 1 }, { value: 1 }]]))
+    // effect(() => {
+    //   console.log('effect')
+    //   m.forEach((value, key) => {
+    //     console.log('value:', value, 'key:', key)
+    //   })
+    // })
+
+    // m.set({ key: 2 }, { value: 2 })
+
+    // case2:
+    // const key = { key: 1 }
+    // const m = reactive(new Map([[key, new Set([1, 2, 3])]]))
+    // effect(() => {
+    //   console.log('effect')
+    //   m.forEach((v, k) => {
+    //     console.log(v.size)
+    //   })
+    // })
+
+    // m.get(key).add(4)
+
+    // case3:
+    const m = reactive(new Map([['key', 1]]))
+
+    effect(() => {
+      console.log('effect')
+      m.forEach((value, key) => {
+        console.log(value)
+      })
+    })
+
+    m.set('key', 2)
+  </script>
+</body>
+
+</html>
