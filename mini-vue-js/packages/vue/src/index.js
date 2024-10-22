@@ -5,6 +5,8 @@ export {
   shallowReactive,
   computed,
   ref,
-  shallowRef
+  shallowRef,
+  readonly,
+  shallowReadonly
 } from '@vue/reactivity'
 export * from '@vue/shared'

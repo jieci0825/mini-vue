@@ -1,15 +1,15 @@
 import { isMap, isObject, isSet } from '@vue/shared'
-import { mutableHandlers, shallowReactiveHandlers } from './baseHandler'
+import {
+  mutableHandlers,
+  readonlyHandlers,
+  shallowReactiveHandlers,
+  shallowReadonlyHandlers
+} from './baseHandler'
 import { IS_REACTIVE } from './constants'
 
 const proxyMap = new WeakMap()
 
-export function createReactiveObject(
-  target,
-  isReadonly,
-  baseHandlers,
-  proxyMap
-) {
+export function createReactiveObject(target, baseHandlers, proxyMap) {
   // 若不是对象且不是 Set 或者 Map，则直接返回
   if (!isObject(target) && !isSet(target) && !isMap(target)) return target
 
@@ -27,18 +27,20 @@ export function createReactiveObject(
 }
 
 export function reactive(value) {
-  return createReactiveObject(value, false, mutableHandlers, proxyMap)
+  return createReactiveObject(value, mutableHandlers, proxyMap)
 }
 
 export function shallowReactive(value) {
-  return createReactiveObject(value, false, shallowReactiveHandlers, proxyMap)
+  return createReactiveObject(value, shallowReactiveHandlers, proxyMap)
 }
 
-// todo: 深度只读
-export function readonly(target) {}
+export function readonly(value) {
+  return createReactiveObject(value, readonlyHandlers, proxyMap)
+}
 
-// todo: 浅只读
-export function shallowReadonly(target) {}
+export function shallowReadonly(target) {
+  return createReactiveObject(target, shallowReadonlyHandlers, proxyMap)
+}
 
 export function toReactive(value) {
   return isObject(value) ? reactive(value) : value

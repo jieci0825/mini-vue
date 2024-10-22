@@ -1,0 +1,29 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Document</title>
+</head>
+
+<body>
+  <script src="../../dist/mini-vue.js"></script>
+  <script>
+    const { shallowReadonly } = MiniVue
+
+    const original = { count: 0, foo: { bar: 10 } }
+    const copy = shallowReadonly(original)
+
+    // 更改 | 删除 该只读副本将会失败，并会得到一个警告
+    copy.count++ // warning!
+    delete copy.count // warning!
+
+    // 浅只读
+    copy.foo.bar++ // success!
+    console.log(copy.count) // 0
+    console.log(copy.foo.bar) // 11
+  </script>
+</body>
+
+</html>

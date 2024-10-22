@@ -12,7 +12,7 @@
   <script>
     const { effect, shallowRef } = MiniVue
 
-    const state = shallowRef({ count: 1 })
+    const state = shallowRef({ count: 1, })
 
     effect(() => {
       console.log('effect-shallowRef:', state.value.count)

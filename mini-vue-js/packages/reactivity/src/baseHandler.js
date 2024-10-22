@@ -323,12 +323,16 @@ class ReadonlyReactiveHandler extends BaseReactiveHandler {
   }
 
   set(target, key) {
-    console.warn(`key: ${key} set 失败，因为 target 是 readonly`, target)
+    if (!isSymbol(key)) {
+      console.warn(`key: ${key} set 失败，因为 target 是 readonly`, target)
+    }
     return true
   }
 
   deleteProperty(target, key) {
-    console.warn(`key: ${key} delete 失败，因为 target 是 readonly`, target)
+    if (!isSymbol(key)) {
+      console.warn(`key: ${key} delete 失败，因为 target 是 readonly`, target)
+    }
     return true
   }
 }
@@ -343,4 +347,4 @@ export const shallowReactiveHandlers = new MutableReactiveHandler(true)
 export const readonlyHandlers = new ReadonlyReactiveHandler()
 
 // 只读-浅
-export const shallowReadonlyHandlers = new BaseReactiveHandler(true)
+export const shallowReadonlyHandlers = new ReadonlyReactiveHandler(true)
