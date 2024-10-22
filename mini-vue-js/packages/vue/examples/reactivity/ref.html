@@ -1,0 +1,29 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Document</title>
+</head>
+
+<body>
+  <script src="../../dist/mini-vue.js"></script>
+  <script>
+    const { effect, ref } = MiniVue
+
+    const state = ref({ count: 1 })
+
+    effect(() => {
+      console.log('effect-shallowRef:', state.value.count)
+    })
+
+    // 会触发更改
+    state.value.count = 2
+
+    // 会触发更改
+    state.value = { count: 2 }
+  </script>
+</body>
+
+</html>

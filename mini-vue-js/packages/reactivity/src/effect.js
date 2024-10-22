@@ -45,7 +45,7 @@ export function trigger(target, key, type, newValue) {
 
   // 添加当前 key 的所有依赖
   const effects = depsMap.get(key)
-  effects && triggerEffects(effects, effetsToRun)
+  effects && addRunEffects(effects, effetsToRun)
 
   // 当设置 length 的值小于等于当前数组索引时，则表示删除了某些元素
   // 例如 [1,2,3,4,5] 设置了 length = 3，则删除了 4 和 5，那么  4 和 5 的依赖需要被触发
@@ -53,7 +53,7 @@ export function trigger(target, key, type, newValue) {
     depsMap.forEach((effects, key) => {
       // 此时 key 为 index
       if (key >= newValue) {
-        triggerEffects(effects, effetsToRun)
+        addRunEffects(effects, effetsToRun)
       }
     })
   }
@@ -65,7 +65,7 @@ export function trigger(target, key, type, newValue) {
   ) {
     // 取得 Map 数据类型的 keys 方法对应的副作用函数
     const iterateEffects = depsMap.get(MAP_KEY_ITERATOR_KEY)
-    triggerEffects(iterateEffects, effetsToRun)
+    addRunEffects(iterateEffects, effetsToRun)
   }
 
   // 只有当触发类型为 ADD 或 DELETE 时，才会触发这个迭代行为的依赖
@@ -77,36 +77,42 @@ export function trigger(target, key, type, newValue) {
     if (isArray(target)) {
       // 当通过设置过大索引值导致数组长度变化时，手动触发 length 相关依赖
       const lengthEffects = depsMap.get('length')
-      lengthEffects && triggerEffects(lengthEffects, effetsToRun)
+      lengthEffects && addRunEffects(lengthEffects, effetsToRun)
     } else {
       // 添加 ITERATE_KEY 的依赖
       const iterateEffects = depsMap.get(ITERATE_KEY)
-      iterateEffects && triggerEffects(iterateEffects, effetsToRun)
+      iterateEffects && addRunEffects(iterateEffects, effetsToRun)
     }
   }
 
-  if (effetsToRun) {
-    effetsToRun.forEach(effect => {
-      triggerEffect(effect)
-    })
-  }
+  // 批量执行副作用函数
+  triggerEffects(effetsToRun)
 }
 
 /**
- * 批量执行副作用实例
- * @param {Set<object>} effects 即 deps(deps 里面存储的就是一个个 effect 实例)
- * @param {Set<object>} runSet 执行的集合
- * @returns
+ * 将副作用列表添加到执行集合中
  */
-export function triggerEffects(effects, effetsToRun) {
+function addRunEffects(effects, effetsToRun) {
   if (!effects) return
-
   effects.forEach(effect => {
     // 遍历加入时进行边界处理，effect如果是当前正在执行的实例，则无需再添加到新的集合中
     if (effect !== activeEffect) {
       effetsToRun.add(effect)
     }
   })
+}
+
+/**
+ * 批量执行副作用实例
+ * @param {Set<object>} effetsToRun 执行的集合
+ * @returns
+ */
+export function triggerEffects(effetsToRun) {
+  if (effetsToRun) {
+    effetsToRun.forEach(effect => {
+      triggerEffect(effect)
+    })
+  }
 }
 
 /**

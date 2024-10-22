@@ -40,11 +40,11 @@ export function ref<T>(value?: unknown) {
     return crateRef<T>(value as T, false)
 }
 
-function crateRef<T>(rawValue: T, shallow: boolean) {
+function crateRef<T>(rawValue: T, isShallow: boolean) {
     if (isRef(rawValue)) {
         return rawValue
     }
-    return new RefImpl<T>(rawValue, shallow)
+    return new RefImpl<T>(rawValue, isShallow)
 }
 
 export function trackRefValue(ref: any) {

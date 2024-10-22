@@ -34,8 +34,16 @@ export function shallowReactive(value) {
   return createReactiveObject(value, false, shallowReactiveHandlers, proxyMap)
 }
 
+// todo: 深度只读
+export function readonly(target) {}
+
+// todo: 浅只读
+export function shallowReadonly(target) {}
+
+export function toReactive(value) {
+  return isObject(value) ? reactive(value) : value
+}
+
 export function isReactive(value) {
   return isObject(value) && !!value[IS_REACTIVE]
 }
-
-export function readonly(target) {}
