@@ -1,3 +1,5 @@
+export { render } from '@vue/runtime-dom'
+export { createRenderer } from '@vue/runtime-core'
 export { queuePreFlushCbs, watch } from '@vue/runtime-core'
 export {
   effect,
