@@ -1,11 +1,13 @@
 import { patchAttr } from './modules/attr'
 import { patchClass } from './modules/class'
 import { patchDOMProp } from './modules/props'
+import { patchStyle } from './modules/style'
 
 export function patchProp(el, key, prevValue, nextValue) {
-  // 处理 class
   if (key === 'class') {
     patchClass(el, nextValue)
+  } else if (key === 'style') {
+    patchStyle(el, prevValue, nextValue)
   }
   // 处理 DOM Properties
   else if (shouldSetAsProp(el, key)) {

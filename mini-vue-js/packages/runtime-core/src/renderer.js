@@ -20,8 +20,17 @@ function baseCreateRenderer(options) {
     }
   }
 
+  function unmount(vnode) {
+    const { el } = vnode
+    const parent = el.parentNode
+    if (parent) {
+      parent.removeChild(el)
+    }
+  }
+
   function mountElement(vnode, container) {
-    const el = hostCreateElement(vnode.type)
+    // 让 vnode.el 引用真实的 dom 元素
+    const el = (vnode.el = hostCreateElement(vnode.type))
     if (isString(vnode.children)) {
       hostSetText(el, vnode.children)
     } else if (isArray(vnode.children)) {
@@ -50,11 +59,10 @@ function baseCreateRenderer(options) {
       patch(container._vnode, vnode, container)
     } else {
       if (container._vnode) {
-        container.innerHTML = ''
+        unmount(container._vnode)
       }
-
-      container._vnode = vnode
     }
+    container._vnode = vnode
   }
 
   return {
