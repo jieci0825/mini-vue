@@ -1,4 +1,5 @@
-import { isString } from '@vue/shared'
+import { isArray, isString } from '@vue/shared'
+import { normalizeClass } from './normalizeProp'
 
 export function createRenderer(options) {
   return baseCreateRenderer(options)
@@ -8,7 +9,8 @@ function baseCreateRenderer(options) {
   const {
     createElement: hostCreateElement,
     setText: hostSetText,
-    insert: hostInsert
+    insert: hostInsert,
+    patchProp: hostPatchProp
   } = options
 
   function patch(n1, n2, container) {
@@ -22,7 +24,24 @@ function baseCreateRenderer(options) {
     const el = hostCreateElement(vnode.type)
     if (isString(vnode.children)) {
       hostSetText(el, vnode.children)
+    } else if (isArray(vnode.children)) {
+      // 如果是一个数组的话，需要循环调用patch
+      vnode.children.forEach(child => {
+        patch(null, child, el)
+      })
     }
+
+    if (vnode.props) {
+      // ! 暂时：如果有属性且存在 class 则进行提前处理
+      if (vnode.props.class) {
+        vnode.props.class = normalizeClass(vnode.props.class)
+      }
+
+      for (const key in vnode.props) {
+        hostPatchProp(el, key, null, vnode.props[key])
+      }
+    }
+
     hostInsert(el, container)
   }
 

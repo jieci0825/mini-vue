@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Document</title>
+</head>
+
+<body>
+  <button disabled>Button</button>
+  <div id="app"></div>
+
+  <script src="../../dist/mini-vue.js"></script>
+  <script>
+    const { render } = MiniVue
+
+    const vnode = {
+      type: 'div',
+      props: {
+        id: 'foo'
+      },
+      children: [
+        {
+          type: 'p',
+          children: 'hello'
+        },
+        {
+          type: 'p',
+          children: 'world'
+        }
+      ]
+    }
+
+    render(vnode, document.querySelector('#app'))
+  </script>
+</body>
+
+</html>

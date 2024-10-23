@@ -1,7 +1,9 @@
 import { createRenderer } from '@vue/runtime-core'
 import { nodeOps } from './nodeOps'
+import { extend } from '@vue/shared'
+import { patchProp } from './patchProp'
 
-const rendererOptions = nodeOps
+const rendererOptions = extend({ patchProp }, nodeOps)
 
 let renderer
 
