@@ -28,6 +28,9 @@ export function isArray(value) {
 
 export const objectToString = Object.prototype.toString
 
+export const EMPTY_OBJ = {}
+export const EMPTY_ARR = []
+
 export function toTypeString(value) {
   return objectToString.call(value)
 }

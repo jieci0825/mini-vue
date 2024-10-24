@@ -1,5 +1,3 @@
-import { isBoolean } from '@vue/shared'
-
 const doc = document
 
 function shouldSetAsProps(el, key, value) {

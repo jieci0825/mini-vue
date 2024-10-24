@@ -1,4 +1,4 @@
-import { isArray, isObject, isString } from '@vue/shared'
+import { EMPTY_OBJ, isArray, isObject, isString } from '@vue/shared'
 import { normalizeClass } from './normalizeProp'
 import { isSameVNodeType } from './vnode'
 
@@ -27,7 +27,7 @@ function baseCreateRenderer(options) {
       if (!n1) {
         mountElement(n2, container)
       } else {
-        // TODO 更新
+        patchElement(n1, n2)
       }
     }
     // 如果是对象表示是组件
@@ -70,6 +70,32 @@ function baseCreateRenderer(options) {
     }
 
     hostInsert(el, container)
+  }
+
+  function patchElement(n1, n2) {
+    // 将旧vnode上的 el 赋值给 新vnode的 el 属性，实现 dom 元素复用
+    const el = (n2.el = n1.el)
+    const oldProps = n1.props || EMPTY_OBJ
+    const newProps = n2.props || EMPTY_OBJ
+
+    // 更新 props
+    for (const key in newProps) {
+      // 如果新属性和就旧属性不一样，则更新
+      if (newProps[key] !== oldProps[key]) {
+        hostPatchProp(el, key, oldProps[key], newProps[key])
+      }
+    }
+
+    // 移除旧属性
+    //  - 如果旧属性是一个空对象，则不需要处理
+    if (oldProps !== EMPTY_OBJ) {
+      for (const key in oldProps) {
+        //  - 遍历旧props，如果旧props上存在的属性，但是在新props上不存在，则移除
+        if (!(key in newProps)) {
+          hostPatchProp(el, key, oldProps[key], null)
+        }
+      }
+    }
   }
 
   function render(vnode, container) {

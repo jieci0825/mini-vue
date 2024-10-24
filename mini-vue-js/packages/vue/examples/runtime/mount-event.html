@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Document</title>
+  <style>
+    #app {
+      display: flex;
+      justify-content: center;
+    }
+
+    .box {
+      width: 100px;
+      height: 100px;
+      background-color: salmon;
+    }
+  </style>
+</head>
+
+<body>
+  <div class="box"></div>
+  <div id="app"></div>
+
+  <script src="../../dist/mini-vue.js"></script>
+  <script>
+    const box = document.querySelector('.box')
+    box.addEventListener('click', () => {
+      console.log('鼠标点击')
+    })
+    box.addEventListener('mousedown', () => {
+      console.log('鼠标按下')
+    })
+
+
+    const { render } = MiniVue
+
+    const vnode = {
+      type: 'h1',
+      props: {
+        onClick: [
+          () => {
+            console.log('我是 click1事件')
+          },
+          () => {
+            console.log('我是 click2 事件')
+          }
+        ],
+      },
+      children: 'hello'
+    }
+
+    render(vnode, document.querySelector('#app'))
+  </script>
+</body>
+
+</html>

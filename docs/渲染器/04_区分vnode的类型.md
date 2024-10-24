@@ -40,7 +40,7 @@ function patch(n1, n2, container) {
     if (!n1) {
       mountElement(n2, container)
     } else {
-      // TODO 更新
+      // 更新
     }
   }
   // 如果是对象表示是组件
