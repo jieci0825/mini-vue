@@ -6,33 +6,33 @@
 
 ```javascript
 function effect(fn, options = {}) {
-	const effectFn = () => {
-		activeFn = effectFn
-		cleanup(effectFn)
-		effectStack.push(effectFn)
-		fn()
-		effectStack.pop()
-		activeFn = effectStack[effectStack.length - 1]
-	}
+  const effectFn = () => {
+    activeFn = effectFn
+    cleanup(effectFn)
+    effectStack.push(effectFn)
+    fn()
+    effectStack.pop()
+    activeFn = effectStack[effectStack.length - 1]
+  }
 
-	effectFn.options = options
+  effectFn.options = options
 
-	effectFn.deps = []
+  effectFn.deps = []
 
-	// 如果开启了懒加载，则不立即执行
-	if (options.lazy) {
-		return effectFn
-	}
-	effectFn()
+  // 如果开启了懒加载，则不立即执行
+  if (options.lazy) {
+    return effectFn
+  }
+  effectFn()
 }
 
 const et = effect(
-	() => {
-		console.log(objProxy.a)
-	},
-	{
-		lazy: true
-	}
+  () => {
+    console.log(objProxy.a)
+  },
+  {
+    lazy: true
+  }
 )
 // 手动执行副作用函数
 et()
@@ -51,9 +51,9 @@ objProxy.a++
 
 ```javascript
 const obj = { first: '李', last: '云守' }
-const objProxy = new Proxy(obj, /* ... */)
+const objProxy = new Proxy(obj /* ... */)
 
-const et = effect(()=> objProxy.first + objProxy.last, { lazy: true } )
+const et = effect(() => objProxy.first + objProxy.last, { lazy: true })
 
 // value 就是 getter 的返回值
 const value = et()
@@ -63,26 +63,26 @@ const value = et()
 
 ```javascript
 function effect(fn, options = {}) {
-	const effectFn = () => {
-		activeFn = effectFn
-		cleanup(effectFn)
-		effectStack.push(effectFn)
-		// 使用 result 变量存储 fn(即getter) 的返回值
-		const result = fn()
-		effectStack.pop()
-		activeFn = effectStack[effectStack.length - 1]
-		// 将 fn 函数的返回作为 effectFn 函数的返回值
-		return result
-	}
+  const effectFn = () => {
+    activeFn = effectFn
+    cleanup(effectFn)
+    effectStack.push(effectFn)
+    // 使用 result 变量存储 fn(即getter) 的返回值
+    const result = fn()
+    effectStack.pop()
+    activeFn = effectStack[effectStack.length - 1]
+    // 将 fn 函数的返回作为 effectFn 函数的返回值
+    return result
+  }
 
-	effectFn.options = options
+  effectFn.options = options
 
-	effectFn.deps = []
+  effectFn.deps = []
 
-	if (options.lazy) {
-		return effectFn
-	}
-	effectFn()
+  if (options.lazy) {
+    return effectFn
+  }
+  effectFn()
 }
 ```
 
@@ -92,19 +92,19 @@ function effect(fn, options = {}) {
 
 ```javascript
 function computed(getter) {
-	// 将 getter 作为副作用函数
-	const effectFn = effect(getter, {
-		lazy: true
-	})
+  // 将 getter 作为副作用函数
+  const effectFn = effect(getter, {
+    lazy: true
+  })
 
-	const obj = {
-		// 当读取 value 属性时触发
-		get value() {
-			return effectFn()
-		}
-	}
+  const obj = {
+    // 当读取 value 属性时触发
+    get value() {
+      return effectFn()
+    }
+  }
 
-	return obj
+  return obj
 }
 
 const fullName = computed(() => objProxy.first + objProxy.last)
@@ -117,8 +117,8 @@ console.log(fullName.value) // 李云守
 
 ```javascript
 const fullName = computed(() => {
-	console.log('computed 执行了')
-	return objProxy.first + objProxy.last
+  console.log('computed 执行了')
+  return objProxy.first + objProxy.last
 })
 console.log(fullName.value)
 console.log(fullName.value)
@@ -133,29 +133,29 @@ console.log(fullName.value)
 
 ```javascript
 function computed(getter) {
-	// 缓存上一次的值
-	let value
-	// 决定是否需要重新计算值，为 true 表示需要重新计算，也表示数据脏了，false 表示使用缓存
-	let dirty = true
+  // 缓存上一次的值
+  let value
+  // 决定是否需要重新计算值，为 true 表示需要重新计算，也表示数据脏了，false 表示使用缓存
+  let dirty = true
 
-	const effectFn = effect(getter, {
-		lazy: true
-	})
+  const effectFn = effect(getter, {
+    lazy: true
+  })
 
-	const obj = {
-		get value() {
-			// 如果数据脏了，则重新计算
-			if (dirty) {
-				// 重新计算，获取新的结果，并赋值给 value
-				value = effectFn()
-				// 修改状态
-				dirty = false
-			}
-			return value
-		}
-	}
+  const obj = {
+    get value() {
+      // 如果数据脏了，则重新计算
+      if (dirty) {
+        // 重新计算，获取新的结果，并赋值给 value
+        value = effectFn()
+        // 修改状态
+        dirty = false
+      }
+      return value
+    }
+  }
 
-	return obj
+  return obj
 }
 ```
 
@@ -167,8 +167,8 @@ function computed(getter) {
 
 ```javascript
 const fullName = computed(() => {
-	console.log('computed 执行了')
-	return objProxy.first + objProxy.last
+  console.log('computed 执行了')
+  return objProxy.first + objProxy.last
 })
 console.log(fullName.value)
 console.log(fullName.value)
@@ -185,28 +185,28 @@ console.log(fullName.value)
 
 ```javascript
 function computed(getter) {
-	let value
-	let dirty = true
+  let value
+  let dirty = true
 
-	const effectFn = effect(getter, {
-		lazy: true,
-		scheduler() {
-			// 修改的时候，dirty 为 true，下次访问的时候，会重新计算
-			dirty = true
-		}
-	})
+  const effectFn = effect(getter, {
+    lazy: true,
+    scheduler() {
+      // 修改的时候，dirty 为 true，下次访问的时候，会重新计算
+      dirty = true
+    }
+  })
 
-	const obj = {
-		get value() {
-			if (dirty) {
-				value = effectFn()
-				dirty = false
-			}
-			return value
-		}
-	}
+  const obj = {
+    get value() {
+      if (dirty) {
+        value = effectFn()
+        dirty = false
+      }
+      return value
+    }
+  }
 
-	return obj
+  return obj
 }
 ```
 
@@ -218,11 +218,11 @@ function computed(getter) {
 
 ```javascript
 const fullName = computed(() => {
-	return objProxy.first + objProxy.last
+  return objProxy.first + objProxy.last
 })
 
 effect(() => {
-	console.log('模拟在模板中使用了 computed：', fullName.value)
+  console.log('模拟在模板中使用了 computed：', fullName.value)
 })
 
 console.log('***** 修改值 *****')
@@ -239,33 +239,33 @@ objProxy.first = '张'
 
 ```javascript
 function computed(getter) {
-	let value
-	let dirty = true
+  let value
+  let dirty = true
 
-	const effectFn = effect(getter, {
-		lazy: true,
-		scheduler() {
-			if (!dirty) {
-				dirty = true
-				// 派发更新
-				trigger(objProxy, 'value')
-			}
-		}
-	})
+  const effectFn = effect(getter, {
+    lazy: true,
+    scheduler() {
+      if (!dirty) {
+        dirty = true
+        // 派发更新
+        trigger(objProxy, 'value')
+      }
+    }
+  })
 
-	const obj = {
-		get value() {
-			if (dirty) {
-				value = effectFn()
-				dirty = false
-			}
-			// 收集依赖-在次期间属于 effect 的执行时期，activeFn是有值的，所以可以直接调用 track 建立联系
-			track(obj, 'value')
-			return value
-		}
-	}
+  const obj = {
+    get value() {
+      if (dirty) {
+        value = effectFn()
+        dirty = false
+      }
+      // 收集依赖-在次期间属于 effect 的执行时期，activeFn是有值的，所以可以直接调用 track 建立联系
+      track(obj, 'value')
+      return value
+    }
+  }
 
-	return obj
+  return obj
 }
 ```
 

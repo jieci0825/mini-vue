@@ -7,8 +7,8 @@
 在实现之前，我们看一下 watch 的基本使用，如下：
 
 ```javascript
-watch(obj, ()=>{
-	console.log('数据发生变化了')
+watch(obj, () => {
+  console.log('数据发生变化了')
 })
 
 obj.a++
@@ -20,14 +20,14 @@ obj.a++
 
 ```javascript
 effect(
-	() => {
-		objProxy.a
-	},
-	{
-		scheduler() {
-			console.log('数据发生了变化')
-		}
-	}
+  () => {
+    objProxy.a
+  },
+  {
+    scheduler() {
+      console.log('数据发生了变化')
+    }
+  }
 )
 
 objProxy.a++
@@ -37,21 +37,21 @@ objProxy.a++
 
 ```javascript
 function watch(source, cb) {
-	effect(
-		() => {
-			source.a
-		},
-		{
-			scheduler() {
-				// 调用回调
-				cb()
-			}
-		}
-	)
+  effect(
+    () => {
+      source.a
+    },
+    {
+      scheduler() {
+        // 调用回调
+        cb()
+      }
+    }
+  )
 }
 
 watch(objProxy, () => {
-	console.log('数据发生了变化')
+  console.log('数据发生了变化')
 })
 
 objProxy.a++
@@ -61,41 +61,41 @@ objProxy.a++
 
 ```javascript
 const obj = { a: 1, b: 2 }
-const objProxy = new Proxy(obj, /* ... */)
+const objProxy = new Proxy(obj /* ... */)
 
 function traverse(value, seen = new Set()) {
-	// 如果当前 value 是原始值或者已经读取过了，则不在做处理
-	if (typeof value !== 'object' || value === null || seen.has(value)) return
-	// 加入到 seen 中，表示已经读取过了
-	seen.add(value)
+  // 如果当前 value 是原始值或者已经读取过了，则不在做处理
+  if (typeof value !== 'object' || value === null || seen.has(value)) return
+  // 加入到 seen 中，表示已经读取过了
+  seen.add(value)
 
-	// * 这里暂时不考虑数组的情况
-	// 假设 value 是一个对象，使用 for...in 循环遍历 value 对象
-	for (const key in value) {
-		// value[key] 就已经进行了一个读取行为
-		//  - 同时递归调用，处理深层次的对象
-		traverse(value[key], seen)
-	}
-	
-    // 返回 value，可以当做 getter 函数的返回值
-	return value
+  // * 这里暂时不考虑数组的情况
+  // 假设 value 是一个对象，使用 for...in 循环遍历 value 对象
+  for (const key in value) {
+    // value[key] 就已经进行了一个读取行为
+    //  - 同时递归调用，处理深层次的对象
+    traverse(value[key], seen)
+  }
+
+  // 返回 value，可以当做 getter 函数的返回值
+  return value
 }
 
 function watch(source, cb) {
-	effect(
-		() => {
-			return traverse(source)
-		},
-		{
-			scheduler() {
-				cb()
-			}
-		}
-	)
+  effect(
+    () => {
+      return traverse(source)
+    },
+    {
+      scheduler() {
+        cb()
+      }
+    }
+  )
 }
 
 watch(objProxy, () => {
-	console.log('数据发生了变化')
+  console.log('数据发生了变化')
 })
 
 objProxy.a++
@@ -110,20 +110,20 @@ objProxy.b++
 
 ```javascript
 function watch(source, cb) {
-	let getter
-	// 如果 source 是一个函数，则直接赋值给 getter
-	if (typeof source === 'function') {
-		getter = source
-	}
-	// 不是函数的话，则作为对象处理，调用 traverse 函数进行递归遍历
-	else {
-		getter = () => traverse(source)
-	}
-	effect(getter, {
-		scheduler() {
-			cb()
-		}
-	})
+  let getter
+  // 如果 source 是一个函数，则直接赋值给 getter
+  if (typeof source === 'function') {
+    getter = source
+  }
+  // 不是函数的话，则作为对象处理，调用 traverse 函数进行递归遍历
+  else {
+    getter = () => traverse(source)
+  }
+  effect(getter, {
+    scheduler() {
+      cb()
+    }
+  })
 }
 ```
 
@@ -131,36 +131,36 @@ function watch(source, cb) {
 
 ```javascript
 function watch(source, cb) {
-	let getter
-	if (typeof source === 'function') {
-		getter = source
-	} else {
-		getter = () => traverse(source)
-	}
-	let oldValue, newValue
-	// 开启 lazy 选项-可以实现外部手动调用副作用函数，且调用得到的返回值就是 getter 函数的返回值
-	const effectFn = effect(getter, {
-		lazy: true,
-		scheduler() {
-			// 触发调度器时，表示数据更新了，此时可以通过再次调用 effectFn 得到新值
-			newValue = effectFn()
-			// 传递新旧值
-			cb(newValue, oldValue)
-			// 将本次的新值作为下一次的旧值
-			oldValue = newValue
-		}
-	})
-	// 手动调用一次，拿到初始值，作为旧值
-	oldValue = effectFn()
+  let getter
+  if (typeof source === 'function') {
+    getter = source
+  } else {
+    getter = () => traverse(source)
+  }
+  let oldValue, newValue
+  // 开启 lazy 选项-可以实现外部手动调用副作用函数，且调用得到的返回值就是 getter 函数的返回值
+  const effectFn = effect(getter, {
+    lazy: true,
+    scheduler() {
+      // 触发调度器时，表示数据更新了，此时可以通过再次调用 effectFn 得到新值
+      newValue = effectFn()
+      // 传递新旧值
+      cb(newValue, oldValue)
+      // 将本次的新值作为下一次的旧值
+      oldValue = newValue
+    }
+  })
+  // 手动调用一次，拿到初始值，作为旧值
+  oldValue = effectFn()
 }
 
 /* ... */
 
 watch(
-	() => objProxy.a,
-	(newValue, oldValue) => {
-		console.log('数据发生了变化: ', newValue, oldValue)
-	}
+  () => objProxy.a,
+  (newValue, oldValue) => {
+    console.log('数据发生了变化: ', newValue, oldValue)
+  }
 )
 
 objProxy.a++
@@ -177,21 +177,21 @@ objProxy.a++
 ```javascript
 let getter
 if (typeof source === 'function') {
-	getter = source
+  getter = source
 } else {
-	getter = () => {
-		// 根据传递选项来判断是否进行递归读取
-		if (options.deep) {
-			return traverse(source)
-		} else {
-			// 直接只遍历一层即可
-			for (const key in source) {
-				source[key]
-			}
-			// 返回source本身
-			return source
-		}
-	}
+  getter = () => {
+    // 根据传递选项来判断是否进行递归读取
+    if (options.deep) {
+      return traverse(source)
+    } else {
+      // 直接只遍历一层即可
+      for (const key in source) {
+        source[key]
+      }
+      // 返回source本身
+      return source
+    }
+  }
 }
 ```
 
@@ -205,44 +205,44 @@ if (typeof source === 'function') {
 
 ```javascript
 function watch(source, cb, options = {}) {
-	let getter
-	if (typeof source === 'function') {
-		getter = source
-	} else {
-		getter = () => traverse(source)
-	}
+  let getter
+  if (typeof source === 'function') {
+    getter = source
+  } else {
+    getter = () => traverse(source)
+  }
 
-	let oldValue, newValue
+  let oldValue, newValue
 
-	// 把 scheduler 提取出来
-	const job = () => {
-		newValue = effectFn()
-		cb(newValue, oldValue)
-		oldValue = newValue
-	}
+  // 把 scheduler 提取出来
+  const job = () => {
+    newValue = effectFn()
+    cb(newValue, oldValue)
+    oldValue = newValue
+  }
 
-	const effectFn = effect(getter, {
-		lazy: true,
-		// 将job作为调度器函数
-		scheduler: job
-	})
+  const effectFn = effect(getter, {
+    lazy: true,
+    // 将job作为调度器函数
+    scheduler: job
+  })
 
-	if (options.immediate) {
-		// 立即执行一次
-		job()
-	} else {
-		oldValue = effectFn()
-	}
+  if (options.immediate) {
+    // 立即执行一次
+    job()
+  } else {
+    oldValue = effectFn()
+  }
 }
 
 watch(
-	() => objProxy.a,
-	(newValue, oldValue) => {
-		console.log('数据发生了变化: ', newValue, oldValue)
-	},
-	{
-		immediate: true
-	}
+  () => objProxy.a,
+  (newValue, oldValue) => {
+    console.log('数据发生了变化: ', newValue, oldValue)
+  },
+  {
+    immediate: true
+  }
 )
 ```
 
@@ -258,40 +258,40 @@ watch(
 
 ```javascript
 function watch(source, cb, options = {}) {
-	let getter
-	if (typeof source === 'function') {
-		getter = source
-	} else {
-		getter = () => traverse(source)
-	}
+  let getter
+  if (typeof source === 'function') {
+    getter = source
+  } else {
+    getter = () => traverse(source)
+  }
 
-	let oldValue, newValue
+  let oldValue, newValue
 
-	const job = () => {
-		newValue = effectFn()
-		cb(newValue, oldValue)
-		oldValue = newValue
-	}
+  const job = () => {
+    newValue = effectFn()
+    cb(newValue, oldValue)
+    oldValue = newValue
+  }
 
-	const effectFn = effect(getter, {
-		lazy: true,
-		scheduler: () => {
-			// 为 post 时，放到微任务队列中执行
-			if (options.flush === 'post') {
-				// 手动创建一个微任务
-				const p = Promise.resolve()
-				p.then(job)
-			} else {
-				job()
-			}
-		}
-	})
+  const effectFn = effect(getter, {
+    lazy: true,
+    scheduler: () => {
+      // 为 post 时，放到微任务队列中执行
+      if (options.flush === 'post') {
+        // 手动创建一个微任务
+        const p = Promise.resolve()
+        p.then(job)
+      } else {
+        job()
+      }
+    }
+  })
 
-	if (options.immediate) {
-		job()
-	} else {
-		oldValue = effectFn()
-	}
+  if (options.immediate) {
+    job()
+  } else {
+    oldValue = effectFn()
+  }
 }
 ```
 
@@ -302,9 +302,9 @@ function watch(source, cb, options = {}) {
 我们先看一段示例代码：
 
 ```javascript
-watch(obj, async ()=>{
-    const resp = await axios.get('/api/book')
-    tableData = resp
+watch(obj, async () => {
+  const resp = await axios.get('/api/book')
+  tableData = resp
 })
 ```
 
@@ -313,19 +313,19 @@ watch(obj, async ()=>{
 那这个问题 Vue 是如何解决的，我们看一段示例代码，如下：
 
 ```javascript
-watch(obj, async (newVal, oldVal, onInvalidate)=>{
-    // 表示是否过期
-    let expired = false
-    // 注册一个过期的回调
-    onInvalidate(()=>{
-        // 过期时，修改 expired 为 true
-        expired = true
-    })
-    const resp = await axios.get('/api/book')
-   	// 只有没有过期，才会进行赋值
-    if(!expired) {
-        tableData = resp
-    }
+watch(obj, async (newVal, oldVal, onInvalidate) => {
+  // 表示是否过期
+  let expired = false
+  // 注册一个过期的回调
+  onInvalidate(() => {
+    // 过期时，修改 expired 为 true
+    expired = true
+  })
+  const resp = await axios.get('/api/book')
+  // 只有没有过期，才会进行赋值
+  if (!expired) {
+    tableData = resp
+  }
 })
 ```
 
@@ -333,49 +333,49 @@ watch(obj, async (newVal, oldVal, onInvalidate)=>{
 
 ```javascript
 function watch(source, cb, options = {}) {
-	let getter
-	if (typeof source === 'function') {
-		getter = source
-	} else {
-		getter = () => traverse(source)
-	}
+  let getter
+  if (typeof source === 'function') {
+    getter = source
+  } else {
+    getter = () => traverse(source)
+  }
 
-	let oldValue, newValue
+  let oldValue, newValue
 
-	// 存储用户注册的过期回调函数
-	let cleanup
+  // 存储用户注册的过期回调函数
+  let cleanup
 
-	const onInvalidate = fn => {
-		cleanup = fn
-	}
+  const onInvalidate = fn => {
+    cleanup = fn
+  }
 
-	const job = () => {
-		newValue = effectFn()
-		// 调用回调之前，先检测是否有注册过期回调函数，如果有则先执行
-		if (cleanup) {
-			cleanup()
-		}
-		cb(newValue, oldValue, onInvalidate)
-		oldValue = newValue
-	}
+  const job = () => {
+    newValue = effectFn()
+    // 调用回调之前，先检测是否有注册过期回调函数，如果有则先执行
+    if (cleanup) {
+      cleanup()
+    }
+    cb(newValue, oldValue, onInvalidate)
+    oldValue = newValue
+  }
 
-	const effectFn = effect(getter, {
-		lazy: true,
-		scheduler: () => {
-			if (options.flush === 'post') {
-				const p = Promise.resolve()
-				p.then(job)
-			} else {
-				job()
-			}
-		}
-	})
+  const effectFn = effect(getter, {
+    lazy: true,
+    scheduler: () => {
+      if (options.flush === 'post') {
+        const p = Promise.resolve()
+        p.then(job)
+      } else {
+        job()
+      }
+    }
+  })
 
-	if (options.immediate) {
-		job()
-	} else {
-		oldValue = effectFn()
-	}
+  if (options.immediate) {
+    job()
+  } else {
+    oldValue = effectFn()
+  }
 }
 ```
 
@@ -387,27 +387,27 @@ function watch(source, cb, options = {}) {
 // ***** 模拟测试 *****
 let count = 0
 watch(
-	() => objProxy.a,
-	(newValue, oldValue, onInvalidate) => {
-		count++
+  () => objProxy.a,
+  (newValue, oldValue, onInvalidate) => {
+    count++
 
-		const _count = count
+    const _count = count
 
-		let expired = false
+    let expired = false
 
-		onInvalidate(() => {
-			expired = true
-		})
+    onInvalidate(() => {
+      expired = true
+    })
 
-		// 模拟请求
-		setTimeout(() => {
-			if (!expired) {
-				console.log(`请求${_count}-结束了-正常赋值`)
-			} else {
-				console.log(`请求${_count}-结束了-过期了`)
-			}
-		}, 5000 - count * 1000)
-	}
+    // 模拟请求
+    setTimeout(() => {
+      if (!expired) {
+        console.log(`请求${_count}-结束了-正常赋值`)
+      } else {
+        console.log(`请求${_count}-结束了-过期了`)
+      }
+    }, 5000 - count * 1000)
+  }
 )
 
 // 触发第一次

@@ -6,10 +6,10 @@
 
 ```javascript
 const obj = {
-	a: 1,
-	get foo() {
-		return this.a
-	}
+  a: 1,
+  get foo() {
+    return this.a
+  }
 }
 console.log(Reflect.get(obj, 'foo')) // 1
 console.log(Reflect.get(obj, 'foo', { a: 10 })) // 结果是 10 而非 1
@@ -33,15 +33,15 @@ console.log(Reflect.get(obj, 'foo', { a: 10 })) // 结果是 10 而非 1
 
 ```javascript
 const obj = {
-	a: 1,
-	get foo() {
-		return this.a
-	}
+  a: 1,
+  get foo() {
+    return this.a
+  }
 }
-const objProxy = new Proxy(obj, /* ... */)
+const objProxy = new Proxy(obj /* ... */)
 
 effect(() => {
-	console.log(objProxy.foo)
+  console.log(objProxy.foo)
 })
 // 更新 a
 objProxy.a++
@@ -59,7 +59,7 @@ get(target, key, receiver) {
 	track(target, key)
 	// 换成 Reflect.get
 	return Reflect.get(target, key, receiver)
-},
+}
 ```
 
 这里为了更加直观的看到改变，只展示了 get 部分的修改。

@@ -1,41 +1,44 @@
-// 定义一个任务队列，采用 Set 数据结构，因为 Set 中的元素是唯一的，可以避免重复添加任务
-const jobQueue = new Set()
-// 创建一个 promise 实例，用于将任务添加到微任务队列
-const p = Promise.resolve()
+// 是否应该收集依赖
+let shouldTrack = true
 
-// 是否正在刷新队列
-let isFlushing = false
-// 刷新队列函数
-function flushJob() {
-  // 如果正在刷新队列，则不做任何处理
-  if (isFlushing) return
-  // 更改刷新状态
-  isFlushing = true
-  // 加入一个微任务
-  p.then(() => {
-    // 将 jobQueue 中的任务依次执行
-    jobQueue.forEach(job => job())
-  }).finally(() => {
-    // 任务执行完毕后，重置 isFlushing 为 false
-    isFlushing = false
-  })
+// 暂停收集依赖
+function pauseTracking() {
+  shouldTrack = false
 }
 
-effect(
-  () => {
-    console.log(objProxy.a)
-  },
-  {
-    scheduler(fn) {
-      // 每次 objProxy.a 变化时，都会触发调度器
-      //  - jobQueue 是一个 Set 结构，所以不管触发多少次，只会添加一次任务
-      jobQueue.add(fn)
+// 恢复收集依赖
+function resumeTracking() {
+  shouldTrack = true
+}
 
-      // 调用 flushJob 函数，将任务添加到微任务队列
-      flushJob()
-    }
+const arrayInstrumentations = {}
+// 在重写一些方法
+;['push', 'pop', 'shift', 'unshift', 'splice'].forEach(key => {
+  // 这些会改动数组的长度，造成额外的依赖收集，因此在这些方法运行期间，暂停依赖的收集
+  arrayInstrumentations[key] = function (...args) {
+    // 暂停依赖收集
+    pauseTracking()
+    const result = Array.prototype[key].apply(this, args)
+    // 恢复依赖收集
+    resumeTracking()
+    return result
   }
-)
+})
 
-objProxy.a++
-objProxy.a++
+function track(target, key) {
+  // 停止收集依赖期间或者 activeFn 为空，则不收集
+  if (!shouldTrack || !activeFn) return
+
+  let depsMap = targetMap.get(target)
+  if (!depsMap) {
+    depsMap = new Map()
+    targetMap.set(target, depsMap)
+  }
+  let deps = depsMap.get(key)
+  if (!deps) {
+    deps = new Set()
+    depsMap.set(key, deps)
+  }
+  deps.add(activeFn)
+  activeFn.deps.push(deps)
+}

@@ -6,31 +6,31 @@
 
 ```javascript
 function get(target, key, receiver) {
-	track(target, key)
-	return Reflect.get(target, key, receiver)
+  track(target, key)
+  return Reflect.get(target, key, receiver)
 }
 
 function set(target, key, newVal) {
-	target[key] = newVal
-	trigger(target, key)
-	return true
+  target[key] = newVal
+  trigger(target, key)
+  return true
 }
 
 function reactive(value) {
   // 简单做一个基础拦截
   if (typeof value !== 'object' || value === null) {
-		console.warn('value 必须是一个对象')
-		return value
-	}
-  
-	const proxy = new Proxy(value, { get, set })
-	return proxy
+    console.warn('value 必须是一个对象')
+    return value
+  }
+
+  const proxy = new Proxy(value, { get, set })
+  return proxy
 }
 
 const state = reactive({ name: 'zs', age: 18 })
 
 effect(() => {
-	console.log(`${state.name}今年${state.age}岁了`)
+  console.log(`${state.name}今年${state.age}岁了`)
 })
 
 state.age++
@@ -59,22 +59,22 @@ effect(()=>{
 ```javascript
 function has(target, key) {
   console.log('in 被拦截了')
-	track(target, key)
-	return Reflect.has(target, key)
+  track(target, key)
+  return Reflect.has(target, key)
 }
 
 function reactive(value) {
-	if (typeof value !== 'object' || value === null) {
-		console.warn('value 必须是一个对象')
-		return value
-	}
-	const proxy = new Proxy(value, { get, set, has })
-	return proxy
+  if (typeof value !== 'object' || value === null) {
+    console.warn('value 必须是一个对象')
+    return value
+  }
+  const proxy = new Proxy(value, { get, set, has })
+  return proxy
 }
 
 const state = reactive({ name: 'zs', age: 18 })
 effect(() => {
-	'age' in state
+  'age' in state
 })
 ```
 
@@ -89,9 +89,9 @@ for...in 循环对应的内部方法为 [[OwnPropertyKeys]]，对应 Proxy 中�
 ```javascript
 const ITERATE_KEY = Symbol('iterate')
 function ownKeys(target) {
-	// 手动构造了一个 key，让其与副作用函数关联
-	track(target, ITERATE_KEY)
-	return Reflect.ownKeys(target)
+  // 手动构造了一个 key，让其与副作用函数关联
+  track(target, ITERATE_KEY)
+  return Reflect.ownKeys(target)
 }
 ```
 
@@ -106,9 +106,9 @@ function ownKeys(target) {
 ```javascript
 const state = reactive({ name: 'zs', age: 18 })
 effect(() => {
-	for (const key in state) {
-		console.log(key)
-	}
+  for (const key in state) {
+    console.log(key)
+  }
 })
 state.address = 'shanghai'
 ```
@@ -121,10 +121,10 @@ state.address = 'shanghai'
 
 ```javascript
 function set(target, key, newVal) {
-	console.log('set: ', key)
-	target[key] = newVal
-	trigger(target, key)
-	return true
+  console.log('set: ', key)
+  target[key] = newVal
+  trigger(target, key)
+  return true
 }
 ```
 
@@ -136,34 +136,34 @@ function set(target, key, newVal) {
 
 ```javascript
 function trigger(target, key) {
-	let depsMap = targetMap.get(target)
-	if (!depsMap) return
-	let deps = depsMap.get(key)
-	// 取得 ITERATE_KEY 的依赖
-	let iterateDeps = depsMap.get(ITERATE_KEY)
+  let depsMap = targetMap.get(target)
+  if (!depsMap) return
+  let deps = depsMap.get(key)
+  // 取得 ITERATE_KEY 的依赖
+  let iterateDeps = depsMap.get(ITERATE_KEY)
 
-	const effetsToRun = new Set()
-	deps &&
-		deps.forEach(effectFn => {
-			if (effectFn !== activeFn) {
-				effetsToRun.add(effectFn)
-			}
-		})
-	// 除了加入当前 key 的依赖，还要加入 ITERATE_KEY 的依赖
-	iterateDeps &&
-		iterateDeps.forEach(effectFn => {
-			if (effectFn !== activeFn) {
-				effetsToRun.add(effectFn)
-			}
-		})
+  const effetsToRun = new Set()
+  deps &&
+    deps.forEach(effectFn => {
+      if (effectFn !== activeFn) {
+        effetsToRun.add(effectFn)
+      }
+    })
+  // 除了加入当前 key 的依赖，还要加入 ITERATE_KEY 的依赖
+  iterateDeps &&
+    iterateDeps.forEach(effectFn => {
+      if (effectFn !== activeFn) {
+        effetsToRun.add(effectFn)
+      }
+    })
 
-	effetsToRun.forEach(fn => {
-		if (fn.options && fn.options.scheduler) {
-			fn.options.scheduler(fn)
-		} else {
-			fn()
-		}
-	})
+  effetsToRun.forEach(fn => {
+    if (fn.options && fn.options.scheduler) {
+      fn.options.scheduler(fn)
+    } else {
+      fn()
+    }
+  })
 }
 ```
 
@@ -172,9 +172,9 @@ function trigger(target, key) {
 ```javascript
 const state = reactive({ name: 'zs', age: 18 })
 effect(() => {
-	for (const key in state) {
-		console.log(key)
-	}
+  for (const key in state) {
+    console.log(key)
+  }
 })
 console.log('*****添加******')
 state.address = 'shanghai'
@@ -188,56 +188,56 @@ state.address = 'shanghai'
 
 ```javascript
 function trigger(target, key, type) {
-	let depsMap = targetMap.get(target)
-	if (!depsMap) return
-	let deps = depsMap.get(key)
+  let depsMap = targetMap.get(target)
+  if (!depsMap) return
+  let deps = depsMap.get(key)
 
-	const effetsToRun = new Set()
-	deps &&
-		deps.forEach(effectFn => {
-			if (effectFn !== activeFn) {
-				effetsToRun.add(effectFn)
-			}
-		})
+  const effetsToRun = new Set()
+  deps &&
+    deps.forEach(effectFn => {
+      if (effectFn !== activeFn) {
+        effetsToRun.add(effectFn)
+      }
+    })
 
-	// 只有添加属性才会触发 ITERATE_KEY 的副作用函数
-	if (type === 'ADD') {
-		let iterateDeps = depsMap.get(ITERATE_KEY)
-		iterateDeps &&
-			iterateDeps.forEach(effectFn => {
-				if (effectFn !== activeFn) {
-					effetsToRun.add(effectFn)
-				}
-			})
-	}
+  // 只有添加属性才会触发 ITERATE_KEY 的副作用函数
+  if (type === 'ADD') {
+    let iterateDeps = depsMap.get(ITERATE_KEY)
+    iterateDeps &&
+      iterateDeps.forEach(effectFn => {
+        if (effectFn !== activeFn) {
+          effetsToRun.add(effectFn)
+        }
+      })
+  }
 
-	effetsToRun.forEach(fn => {
-		if (fn.options && fn.options.scheduler) {
-			fn.options.scheduler(fn)
-		} else {
-			fn()
-		}
-	})
+  effetsToRun.forEach(fn => {
+    if (fn.options && fn.options.scheduler) {
+      fn.options.scheduler(fn)
+    } else {
+      fn()
+    }
+  })
 }
 
 /* ... */
 
 function set(target, key, newVal, receiver) {
-	// 根据当前对象有没有这个 key 来区分是新增还是修改
-	const type = Object.prototype.hasOwnProperty.call(target, key) ? 'SET' : 'ADD'
-	const result = Reflect.set(target, key, newVal, receiver)
-	if (!result) return
-	trigger(target, key, type)
-	return result
+  // 根据当前对象有没有这个 key 来区分是新增还是修改
+  const type = Object.prototype.hasOwnProperty.call(target, key) ? 'SET' : 'ADD'
+  const result = Reflect.set(target, key, newVal, receiver)
+  if (!result) return
+  trigger(target, key, type)
+  return result
 }
 
 /* ... */
 
 const state = reactive({ name: 'zs', age: 18 })
 effect(() => {
-	for (const key in state) {
-		console.log(key)
-	}
+  for (const key in state) {
+    console.log(key)
+  }
 })
 console.log('*****修改******')
 state.age++
@@ -259,14 +259,14 @@ delete 在 Proxy 对应的方法则是 [deleteProperty](https://developer.mozill
 
 ```javascript
 function deleteProperty(target, key) {
-	// 检测属性是否存在
-	const hadKey = Object.prototype.hasOwnProperty.call(target, key)
-	const result = Reflect.deleteProperty(target, key)
-	// 属性存在和删除成功，则触发依赖
-	if (hadKey && result) {
-		trigger(target, key, TriggerType.DELETE)
-	}
-	return result
+  // 检测属性是否存在
+  const hadKey = Object.prototype.hasOwnProperty.call(target, key)
+  const result = Reflect.deleteProperty(target, key)
+  // 属性存在和删除成功，则触发依赖
+  if (hadKey && result) {
+    trigger(target, key, TriggerType.DELETE)
+  }
+  return result
 }
 ```
 
@@ -274,36 +274,36 @@ function deleteProperty(target, key) {
 
 ```javascript
 function trigger(target, key, type) {
-	let depsMap = targetMap.get(target)
-	if (!depsMap) return
-	let deps = depsMap.get(key)
+  let depsMap = targetMap.get(target)
+  if (!depsMap) return
+  let deps = depsMap.get(key)
 
-	const effetsToRun = new Set()
-	deps &&
-		deps.forEach(effectFn => {
-			if (effectFn !== activeFn) {
-				effetsToRun.add(effectFn)
-			}
-		})
+  const effetsToRun = new Set()
+  deps &&
+    deps.forEach(effectFn => {
+      if (effectFn !== activeFn) {
+        effetsToRun.add(effectFn)
+      }
+    })
 
-	// 添加判断条件
-	if (type === TriggerType.ADD || type === TriggerType.DELETE) {
-		let iterateDeps = depsMap.get(ITERATE_KEY)
-		iterateDeps &&
-			iterateDeps.forEach(effectFn => {
-				if (effectFn !== activeFn) {
-					effetsToRun.add(effectFn)
-				}
-			})
-	}
+  // 添加判断条件
+  if (type === TriggerType.ADD || type === TriggerType.DELETE) {
+    let iterateDeps = depsMap.get(ITERATE_KEY)
+    iterateDeps &&
+      iterateDeps.forEach(effectFn => {
+        if (effectFn !== activeFn) {
+          effetsToRun.add(effectFn)
+        }
+      })
+  }
 
-	effetsToRun.forEach(fn => {
-		if (fn.options && fn.options.scheduler) {
-			fn.options.scheduler(fn)
-		} else {
-			fn()
-		}
-	})
+  effetsToRun.forEach(fn => {
+    if (fn.options && fn.options.scheduler) {
+      fn.options.scheduler(fn)
+    } else {
+      fn()
+    }
+  })
 }
 ```
 
@@ -312,7 +312,7 @@ function trigger(target, key, type) {
 ```javascript
 const state = reactive({ name: 'zs', age: 18, sex: '男' })
 effect(() => {
-	console.log('effect', state.sex)
+  console.log('effect', state.sex)
 })
 
 delete state.sex
@@ -327,9 +327,9 @@ delete state.sex
 ```javascript
 const state = reactive({ name: 'zs', age: 18, sex: '男' })
 effect(() => {
-	for (const key in state) {
-		console.log('effect: ', key)
-	}
+  for (const key in state) {
+    console.log('effect: ', key)
+  }
 })
 console.log('************')
 delete state.sex
@@ -350,7 +350,7 @@ delete state.sex
 ```javascript
 const state = reactive({ name: 'zs', age: 18, sex: '男' })
 effect(() => {
-	console.log('effect:', state.age)
+  console.log('effect:', state.age)
 })
 state.age = 18
 ```
@@ -363,19 +363,21 @@ state.age = 18
 
 ```javascript
 function set(target, key, newVal, receiver) {
-	// 获取旧值
-	const oldVal = target[key]
+  // 获取旧值
+  const oldVal = target[key]
 
-	const type = Object.prototype.hasOwnProperty.call(target, key) ? TriggerType.SET : TriggerType.ADD
-	const result = Reflect.set(target, key, newVal, receiver)
-	if (!result) return
+  const type = Object.prototype.hasOwnProperty.call(target, key)
+    ? TriggerType.SET
+    : TriggerType.ADD
+  const result = Reflect.set(target, key, newVal, receiver)
+  if (!result) return
 
-	// 新旧值不相等，则触发依赖
-	if (oldVal !== newVal) {
-		trigger(target, key, type)
-	}
+  // 新旧值不相等，则触发依赖
+  if (oldVal !== newVal) {
+    trigger(target, key, type)
+  }
 
-	return result
+  return result
 }
 ```
 
@@ -395,19 +397,20 @@ console.log(Object.is(+0, -0)) // false
 一个值从 NaN 变为 NaN 不会对我们的结果产生影响，所以要看做一样的值，而 +0 和 -0 则会影响，比如在某些数学运算和函数中，`+0` 和 `-0` 可能会产生不同的结果。例如，在某些情况下，计算 `1 / +0` 和 `1 / -0` 会得到正无穷大和负无穷大，所以应该是不一样的，因此这里需要将 === 换成 Object.is 判断，如下：
 
 ```javascript
-
 function set(target, key, newVal, receiver) {
-	const oldVal = target[key]
+  const oldVal = target[key]
 
-	const type = Object.prototype.hasOwnProperty.call(target, key) ? TriggerType.SET : TriggerType.ADD
-	const result = Reflect.set(target, key, newVal, receiver)
-	if (!result) return
+  const type = Object.prototype.hasOwnProperty.call(target, key)
+    ? TriggerType.SET
+    : TriggerType.ADD
+  const result = Reflect.set(target, key, newVal, receiver)
+  if (!result) return
 
-	if (!Object.is(oldVal, newVal)) {
-		trigger(target, key, type)
-	}
+  if (!Object.is(oldVal, newVal)) {
+    trigger(target, key, type)
+  }
 
-	return result
+  return result
 }
 ```
 
@@ -425,7 +428,7 @@ const parent = reactive(proto)
 Object.setPrototypeOf(child, parent)
 
 effect(() => {
-	console.log(child.bar)
+  console.log(child.bar)
 })
 child.bar = 2
 ```
@@ -463,20 +466,22 @@ parent
 
 ```javascript
 function set(target, key, newVal, receiver) {
-	console.log('set-target: ', target)
-	console.log('set-receiver: ', receiver)
-  
-	const oldVal = target[key]
+  console.log('set-target: ', target)
+  console.log('set-receiver: ', receiver)
 
-	const type = Object.prototype.hasOwnProperty.call(target, key) ? TriggerType.SET : TriggerType.ADD
-	const result = Reflect.set(target, key, newVal, receiver)
-	if (!result) return
+  const oldVal = target[key]
 
-	if (!Object.is(oldVal, newVal)) {
-		trigger(target, key, type)
-	}
+  const type = Object.prototype.hasOwnProperty.call(target, key)
+    ? TriggerType.SET
+    : TriggerType.ADD
+  const result = Reflect.set(target, key, newVal, receiver)
+  if (!result) return
 
-	return result
+  if (!Object.is(oldVal, newVal)) {
+    trigger(target, key, type)
+  }
+
+  return result
 }
 
 // 为了方便查看打印，添加一个 name 属性表示
@@ -488,7 +493,7 @@ const parent = reactive(proto)
 Object.setPrototypeOf(child, parent)
 
 effect(() => {
-	console.log(child.bar)
+  console.log(child.bar)
 })
 child.bar = 2
 ```
@@ -506,13 +511,13 @@ child.bar = 2
 const RAW_KEY = Symbol('raw')
 
 function get(target, key, receiver) {
-	// 只要 key 为 RAW_KEY，就返回原始对象
-	if (key === RAW_KEY) {
-		return target
-	}
+  // 只要 key 为 RAW_KEY，就返回原始对象
+  if (key === RAW_KEY) {
+    return target
+  }
 
-	track(target, key)
-	return Reflect.get(target, key, receiver)
+  track(target, key)
+  return Reflect.get(target, key, receiver)
 }
 ```
 
@@ -520,20 +525,22 @@ function get(target, key, receiver) {
 
 ```javascript
 function set(target, key, newVal, receiver) {
-	const oldVal = target[key]
+  const oldVal = target[key]
 
-	const type = Object.prototype.hasOwnProperty.call(target, key) ? TriggerType.SET : TriggerType.ADD
-	const result = Reflect.set(target, key, newVal, receiver)
-	if (!result) return
+  const type = Object.prototype.hasOwnProperty.call(target, key)
+    ? TriggerType.SET
+    : TriggerType.ADD
+  const result = Reflect.set(target, key, newVal, receiver)
+  if (!result) return
 
-	// receiver[RAW_KEY] 表示所代理原始对象，若两者相等则表示 receiver 是 target 的代理对象
-	if (receiver[RAW_KEY] === target) {
-		if (!Object.is(oldVal, newVal)) {
-			trigger(target, key, type)
-		}
-	}
+  // receiver[RAW_KEY] 表示所代理原始对象，若两者相等则表示 receiver 是 target 的代理对象
+  if (receiver[RAW_KEY] === target) {
+    if (!Object.is(oldVal, newVal)) {
+      trigger(target, key, type)
+    }
+  }
 
-	return result
+  return result
 }
 
 /* ... */
@@ -546,7 +553,7 @@ const parent = reactive(proto)
 Object.setPrototypeOf(child, parent)
 
 effect(() => {
-	console.log(child.bar)
+  console.log(child.bar)
 })
 console.log('*****修改*****')
 child.bar = 2
@@ -567,34 +574,36 @@ child.bar = 2
 const IS_REACTIVE = Symbol('isReactive')
 
 function reactive(value) {
-	if (typeof value !== 'object' || value === null) {
-		console.warn('value 必须是一个对象')
-		return value
-	}
-  
-  if()
+  if (typeof value !== 'object' || value === null) {
+    console.warn('value 必须是一个对象')
+    return value
+  }
 
-	const proxy = new Proxy(value, { get, set, has, ownKeys, deleteProperty })
+  if (value[IS_REACTIVE]) {
+    return value
+  }
 
-	// 给完成代理的对象添加一个标识，表示是一个代理对象
-	proxy[IS_REACTIVE] = true
+  const proxy = new Proxy(value, { get, set, has, ownKeys, deleteProperty })
 
-	return proxy
+  // 给完成代理的对象添加一个标识，表示是一个代理对象
+  proxy[IS_REACTIVE] = true
+
+  return proxy
 }
 
 // 判断一个值是否是响应式对象
 function isReactive(value) {
-	return typeof value === 'object' && value !== null && !!value[IS_REACTIVE]
+  return typeof value === 'object' && value !== null && !!value[IS_REACTIVE]
 }
 
 /* ... */
 
 const o1 = reactive({
-	name: 'zs'
+  name: 'zs'
 })
 const o2 = reactive(o1)
 const o3 = reactive({
-	name: 'zs'
+  name: 'zs'
 })
 console.log(o1 === o2) // true
 console.log(o1 === o3) // false
@@ -611,25 +620,25 @@ o1 等于 o2 就表示了不会对本身就是一个代理对象的数据进行�
 const reactiveMap = new WeakMap()
 
 function reactive(value) {
-	if (typeof value !== 'object' || value === null) {
-		console.warn('value 必须是一个对象')
-		return value
-	}
+  if (typeof value !== 'object' || value === null) {
+    console.warn('value 必须是一个对象')
+    return value
+  }
 
-	// 以 value 为 key，从缓存中取出对应的代理对象，如果有责返回缓存的代理对象，不然进行代理
-	if (reactiveMap.has(value)) {
-		return reactiveMap.get(value)
-	}
+  // 以 value 为 key，从缓存中取出对应的代理对象，如果有责返回缓存的代理对象，不然进行代理
+  if (reactiveMap.has(value)) {
+    return reactiveMap.get(value)
+  }
 
-	if (isReactive(value)) return value
+  if (isReactive(value)) return value
 
-	const proxy = new Proxy(value, { get, set, has, ownKeys, deleteProperty })
-	proxy[IS_REACTIVE] = true
+  const proxy = new Proxy(value, { get, set, has, ownKeys, deleteProperty })
+  proxy[IS_REACTIVE] = true
 
-	// 将代理好的对象缓存起来
-	reactiveMap.set(value, proxy)
+  // 将代理好的对象缓存起来
+  reactiveMap.set(value, proxy)
 
-	return proxy
+  return proxy
 }
 
 const obj = { name: 'zs' }
@@ -646,14 +655,14 @@ p1 与 p2 相等，则表示没有重复对同一个原始对象进行代理。
 
 ```javascript
 const obj = {
-	foo: {
-		bar: 1
-	}
+  foo: {
+    bar: 1
+  }
 }
 const p1 = reactive(obj)
 
 effect(() => {
-	console.log(p1.foo.bar)
+  console.log(p1.foo.bar)
 })
 
 console.log('*****修改******')
@@ -670,18 +679,18 @@ p1.foo.bar = 2
 
 ```javascript
 function get(target, key, receiver) {
-	if (key === RAW_KEY) {
-		return target
-	}
-	track(target, key)
+  if (key === RAW_KEY) {
+    return target
+  }
+  track(target, key)
 
-	// 得到本次获取的原始值
-	const result = Reflect.get(target, key, receiver)
-	// 若是一个对象则进行代理，否则直接返回此值
-	if (typeof result === 'object' && result !== null) {
-		return reactive(result)
-	}
-	return result
+  // 得到本次获取的原始值
+  const result = Reflect.get(target, key, receiver)
+  // 若是一个对象则进行代理，否则直接返回此值
+  if (typeof result === 'object' && result !== null) {
+    return reactive(result)
+  }
+  return result
 }
 ```
 
@@ -694,51 +703,57 @@ function get(target, key, receiver) {
 ```javascript
 // 因为是抽离出来的 get，所以如果想拿到 isShallow 的值，就需要在封装一层
 function baseGet(isShallow) {
-	return function get(target, key, receiver) {
-		if (key === RAW_KEY) {
-			return target
-		}
-		track(target, key)
+  return function get(target, key, receiver) {
+    if (key === RAW_KEY) {
+      return target
+    }
+    track(target, key)
 
-		const result = Reflect.get(target, key, receiver)
+    const result = Reflect.get(target, key, receiver)
 
-		// 如果 isShallow 为 true 表示只需要做到浅响应即可，因此直接返回 result 即可
-		if (isShallow) return result
+    // 如果 isShallow 为 true 表示只需要做到浅响应即可，因此直接返回 result 即可
+    if (isShallow) return result
 
-		if (typeof result === 'object' && result !== null) {
-			return reactive(result)
-		}
-		return result
-	}
+    if (typeof result === 'object' && result !== null) {
+      return reactive(result)
+    }
+    return result
+  }
 }
 
 // 深响应
 function reactive(value) {
-	return createReactiveObject(value)
+  return createReactiveObject(value)
 }
 
 // 浅响应
 function shallowReactive(value) {
-	return createReactiveObject(value, true)
+  return createReactiveObject(value, true)
 }
 
 // 将逻辑再做一次抽离，放入 createReactiveObject 函数中
 //  - 使用 isShallow 参数来区分是深响应还是浅响应，默认为 false 表示进行深响应处理
 function createReactiveObject(value, isShallow = false) {
-	if (typeof value !== 'object' || value === null) {
-		console.warn('value 必须是一个对象')
-		return value
-	}
-	if (reactiveMap.has(value)) {
-		return reactiveMap.get(value)
-	}
-	if (isReactive(value)) return value
+  if (typeof value !== 'object' || value === null) {
+    console.warn('value 必须是一个对象')
+    return value
+  }
+  if (reactiveMap.has(value)) {
+    return reactiveMap.get(value)
+  }
+  if (isReactive(value)) return value
 
-	// 通过 baseGet 返回具体的 get 拦截回调函数
-	const proxy = new Proxy(value, { get: baseGet(isShallow), set, has, ownKeys, deleteProperty })
-	proxy[IS_REACTIVE] = true
-	reactiveMap.set(value, proxy)
-	return proxy
+  // 通过 baseGet 返回具体的 get 拦截回调函数
+  const proxy = new Proxy(value, {
+    get: baseGet(isShallow),
+    set,
+    has,
+    ownKeys,
+    deleteProperty
+  })
+  proxy[IS_REACTIVE] = true
+  reactiveMap.set(value, proxy)
+  return proxy
 }
 ```
 
@@ -746,13 +761,13 @@ function createReactiveObject(value, isShallow = false) {
 
 ```javascript
 const obj = {
-	a: {
-		b: 100
-	}
+  a: {
+    b: 100
+  }
 }
 const p1 = shallowReactive(obj)
 effect(() => {
-	console.log(p1.a.b)
+  console.log(p1.a.b)
 })
 console.log('*****修改******')
 p1.a.b++
@@ -766,11 +781,11 @@ p1.a.b++
 
 ```javascript
 const obj = {
-	a: 1
+  a: 1
 }
 const p1 = shallowReactive(obj)
 effect(() => {
-	console.log(p1.a)
+  console.log(p1.a)
 })
 console.log('*****修改******')
 p1.a++
@@ -791,7 +806,7 @@ const arr = [1, 2, 3]
 const a1 = reactive(arr)
 
 effect(() => {
-	console.log('effect: ', a1[0])
+  console.log('effect: ', a1[0])
 })
 
 a1[0] = 4
@@ -810,7 +825,7 @@ const arr = [1]
 const a1 = reactive(arr)
 
 effect(() => {
-	console.log('effect: ', a1.length)
+  console.log('effect: ', a1.length)
 })
 
 // 设置索引为1的值，则长度也变为 2
@@ -824,28 +839,28 @@ console.log(a1.length)
 // 表示这些key忽略
 const noWarnKey = [RAW_KEY, IS_REACTIVE, ITERATE_KEY]
 function baseSet(isReadonly) {
-	return function set(target, key, newVal, receiver) {
-		const oldVal = target[key]
-		const type = Array.isArray.isArray(target)
-			? // 如果代理的目标是数组，则检测 key 是否小于 target.length
-			  // 如果小于，则修改的是数组中已经存在的元素，触发 SET 事件，否则触发 ADD 事件
-			  key < target.length
-				? TriggerType.SET
-				: TriggerType.ADD
-			: Object.prototype.hasOwnProperty.call(target, key)
-			? TriggerType.SET
-			: TriggerType.ADD
+  return function set(target, key, newVal, receiver) {
+    const oldVal = target[key]
+    const type = Array.isArray.isArray(target)
+      ? // 如果代理的目标是数组，则检测 key 是否小于 target.length
+        // 如果小于，则修改的是数组中已经存在的元素，触发 SET 事件，否则触发 ADD 事件
+        key < target.length
+        ? TriggerType.SET
+        : TriggerType.ADD
+      : Object.prototype.hasOwnProperty.call(target, key)
+      ? TriggerType.SET
+      : TriggerType.ADD
 
-		const result = Reflect.set(target, key, newVal, receiver)
-		if (!result) return
-		if (receiver[RAW_KEY] === target) {
-			if (!Object.is(oldVal, newVal)) {
-				trigger(target, key, type)
-			}
-		}
+    const result = Reflect.set(target, key, newVal, receiver)
+    if (!result) return
+    if (receiver[RAW_KEY] === target) {
+      if (!Object.is(oldVal, newVal)) {
+        trigger(target, key, type)
+      }
+    }
 
-		return result
-	}
+    return result
+  }
 }
 ```
 
@@ -853,33 +868,35 @@ function baseSet(isReadonly) {
 
 ```javascript
 function baseSet(isReadonly) {
-	return function set(target, key, newVal, receiver) {
-		const oldLen = Array.isArray(target) ? target.length : undefined
-		const oldVal = target[key]
+  return function set(target, key, newVal, receiver) {
+    const oldLen = Array.isArray(target) ? target.length : undefined
+    const oldVal = target[key]
 
-		let type = Object.prototype.hasOwnProperty.call(target, key) ? TriggerType.SET : TriggerType.ADD
+    let type = Object.prototype.hasOwnProperty.call(target, key)
+      ? TriggerType.SET
+      : TriggerType.ADD
 
-		const result = Reflect.set(target, key, newVal, receiver)
-		if (!result) return
+    const result = Reflect.set(target, key, newVal, receiver)
+    if (!result) return
 
-		const newLen = Array.isArray(target) ? target.length : undefined
+    const newLen = Array.isArray(target) ? target.length : undefined
 
-		if (receiver[RAW_KEY] === target) {
-			if (!Object.is(oldVal, newVal)) {
-				// 设置时如果满足以下条件，则操作类型是 'ADD'
-				// 1、target 是数组
-				// 2、key 不是 length
-				// 3、旧长度小于新长度
-				if (Array.isArray(target) && key !== 'length' && newLen > oldLen) {
-					type = TriggerType.ADD
-				}
-				// 派发更新
-				trigger(target, key, type)
-			}
-		}
+    if (receiver[RAW_KEY] === target) {
+      if (!Object.is(oldVal, newVal)) {
+        // 设置时如果满足以下条件，则操作类型是 'ADD'
+        // 1、target 是数组
+        // 2、key 不是 length
+        // 3、旧长度小于新长度
+        if (Array.isArray(target) && key !== 'length' && newLen > oldLen) {
+          type = TriggerType.ADD
+        }
+        // 派发更新
+        trigger(target, key, type)
+      }
+    }
 
-		return result
-	}
+    return result
+  }
 }
 ```
 
@@ -887,47 +904,47 @@ function baseSet(isReadonly) {
 
 ```javascript
 function trigger(target, key, type) {
-	let depsMap = targetMap.get(target)
-	if (!depsMap) return
-	let deps = depsMap.get(key)
+  let depsMap = targetMap.get(target)
+  if (!depsMap) return
+  let deps = depsMap.get(key)
 
-	const effetsToRun = new Set()
-	deps &&
-		deps.forEach(effectFn => {
-			if (effectFn !== activeFn) {
-				effetsToRun.add(effectFn)
-			}
-		})
+  const effetsToRun = new Set()
+  deps &&
+    deps.forEach(effectFn => {
+      if (effectFn !== activeFn) {
+        effetsToRun.add(effectFn)
+      }
+    })
 
-	// 如果是一个数组，且是新增元素
-	if (Array.isArray(target) && type === TriggerType.ADD) {
-		// 则去除 length 的依赖加入执行集合
-		const lengthEffects = depsMap.get('length')
-		lengthEffects &&
-			lengthEffects.forEach(effectFn => {
-				if (effectFn !== activeFn) {
-					effetsToRun.add(effectFn)
-				}
-			})
-	}
+  // 如果是一个数组，且是新增元素
+  if (Array.isArray(target) && type === TriggerType.ADD) {
+    // 则去除 length 的依赖加入执行集合
+    const lengthEffects = depsMap.get('length')
+    lengthEffects &&
+      lengthEffects.forEach(effectFn => {
+        if (effectFn !== activeFn) {
+          effetsToRun.add(effectFn)
+        }
+      })
+  }
 
-	if (type === TriggerType.ADD || type === TriggerType.DELETE) {
-		let iterateDeps = depsMap.get(ITERATE_KEY)
-		iterateDeps &&
-			iterateDeps.forEach(effectFn => {
-				if (effectFn !== activeFn) {
-					effetsToRun.add(effectFn)
-				}
-			})
-	}
+  if (type === TriggerType.ADD || type === TriggerType.DELETE) {
+    let iterateDeps = depsMap.get(ITERATE_KEY)
+    iterateDeps &&
+      iterateDeps.forEach(effectFn => {
+        if (effectFn !== activeFn) {
+          effetsToRun.add(effectFn)
+        }
+      })
+  }
 
-	effetsToRun.forEach(fn => {
-		if (fn.options && fn.options.scheduler) {
-			fn.options.scheduler(fn)
-		} else {
-			fn()
-		}
-	})
+  effetsToRun.forEach(fn => {
+    if (fn.options && fn.options.scheduler) {
+      fn.options.scheduler(fn)
+    } else {
+      fn()
+    }
+  })
 }
 ```
 
@@ -942,8 +959,8 @@ const arr = ['A']
 const a1 = reactive(arr)
 
 effect(() => {
-	// 访问数组第一个元素
-	console.log('effect: ', a1[0])
+  // 访问数组第一个元素
+  console.log('effect: ', a1[0])
 })
 
 // 将数组的长度设置0，则会清空数组
@@ -959,70 +976,70 @@ console.log(a1.length)
 
 ```javascript
 function trigger(target, key, type, newValue) {
-	let depsMap = targetMap.get(target)
-	if (!depsMap) return
-	let deps = depsMap.get(key)
-	const effetsToRun = new Set()
-	addEffects(effetsToRun, deps)
+  let depsMap = targetMap.get(target)
+  if (!depsMap) return
+  let deps = depsMap.get(key)
+  const effetsToRun = new Set()
+  addEffects(effetsToRun, deps)
 
-	// 如果target是数组，并且 key 是 'length'
-	if (Array.isArray(target) && key === 'length') {
-		// 对于索引大于或者等于当前 length 的新值的元素，就将其取出并添加到 effetsToRun 中等待执行
-		//  - 假设值原数组为 [1,2,3,4,5]，设置 length 为 2
-		//  - 那么新数组就会删减为 [1,2]，则对于索引大于等于 2 的元素 [3,4,5] 就都被删除了，不存在了肯定也要触发依赖
-		//  - 而对于索引小于 2 的元素 [1,2] 则是存在的，没有改变，所以不需要触发依赖
-		depsMap.forEach((deps, key) => {
-			if (key >= newValue) {
-				addEffects(effetsToRun, deps)
-			}
-		})
-	}
+  // 如果target是数组，并且 key 是 'length'
+  if (Array.isArray(target) && key === 'length') {
+    // 对于索引大于或者等于当前 length 的新值的元素，就将其取出并添加到 effetsToRun 中等待执行
+    //  - 假设值原数组为 [1,2,3,4,5]，设置 length 为 2
+    //  - 那么新数组就会删减为 [1,2]，则对于索引大于等于 2 的元素 [3,4,5] 就都被删除了，不存在了肯定也要触发依赖
+    //  - 而对于索引小于 2 的元素 [1,2] 则是存在的，没有改变，所以不需要触发依赖
+    depsMap.forEach((deps, key) => {
+      if (key >= newValue) {
+        addEffects(effetsToRun, deps)
+      }
+    })
+  }
 
-	if (Array.isArray(target) && type === TriggerType.ADD) {
-		const lengthEffects = depsMap.get('length')
-		addEffects(effetsToRun, lengthEffects)
-	}
+  if (Array.isArray(target) && type === TriggerType.ADD) {
+    const lengthEffects = depsMap.get('length')
+    addEffects(effetsToRun, lengthEffects)
+  }
 
-	if (type === TriggerType.ADD || type === TriggerType.DELETE) {
-		let iterateDeps = depsMap.get(ITERATE_KEY)
-		addEffects(effetsToRun, iterateDeps)
-	}
+  if (type === TriggerType.ADD || type === TriggerType.DELETE) {
+    let iterateDeps = depsMap.get(ITERATE_KEY)
+    addEffects(effetsToRun, iterateDeps)
+  }
 
-	effetsToRun.forEach(fn => {
-		if (fn.options && fn.options.scheduler) {
-			fn.options.scheduler(fn)
-		} else {
-			fn()
-		}
-	})
+  effetsToRun.forEach(fn => {
+    if (fn.options && fn.options.scheduler) {
+      fn.options.scheduler(fn)
+    } else {
+      fn()
+    }
+  })
 }
 
 // 将添加的逻辑抽离出来
 function addEffects(effetsToRun, effects) {
-	if (!effects) return
-	effects.forEach(effectFn => {
-		if (effectFn !== activeFn) {
-			effetsToRun.add(effectFn)
-		}
-	})
+  if (!effects) return
+  effects.forEach(effectFn => {
+    if (effectFn !== activeFn) {
+      effetsToRun.add(effectFn)
+    }
+  })
 }
 
 function baseSet(isReadonly) {
-	return function set(target, key, newVal, receiver) {
-		/**/
+  return function set(target, key, newVal, receiver) {
+    /**/
 
-		if (receiver[RAW_KEY] === target) {
-			if (!Object.is(oldVal, newVal)) {
-				if (Array.isArray(target) && key !== 'length' && newLen > oldLen) {
-					type = TriggerType.ADD
-				}
-				// 传递第四个参数-本次修改的新值
-				trigger(target, key, type, newVal)
-			}
-		}
+    if (receiver[RAW_KEY] === target) {
+      if (!Object.is(oldVal, newVal)) {
+        if (Array.isArray(target) && key !== 'length' && newLen > oldLen) {
+          type = TriggerType.ADD
+        }
+        // 传递第四个参数-本次修改的新值
+        trigger(target, key, type, newVal)
+      }
+    }
 
-		return result
-	}
+    return result
+  }
 }
 ```
 
@@ -1038,10 +1055,10 @@ function baseSet(isReadonly) {
 
 ```javascript
 function ownKeys(target) {
-	// 如果是数组，则使用 length 为 key，否则使用 ITERATE_KEY
-	const key = Array.isArray(target) ? 'length' : ITERATE_KEY
-	track(target, key)
-	return Reflect.ownKeys(target)
+  // 如果是数组，则使用 length 为 key，否则使用 ITERATE_KEY
+  const key = Array.isArray(target) ? 'length' : ITERATE_KEY
+  track(target, key)
+  return Reflect.ownKeys(target)
 }
 ```
 
@@ -1050,10 +1067,10 @@ function ownKeys(target) {
 ```javascript
 const arr = reactive(['A', 'B'])
 effect(() => {
-	console.log('effect触发')
-	for (const key in arr) {
-		console.log(key)
-	}
+  console.log('effect触发')
+  for (const key in arr) {
+    console.log(key)
+  }
 })
 console.log('*****修改length*****')
 arr.length = 0
@@ -1069,24 +1086,24 @@ arr.length = 0
 
 ```javascript
 function baseGet(isShallow, isReadonly) {
-	return function get(target, key, receiver) {
-		if (key === RAW_KEY) {
-			return target
-		}
+  return function get(target, key, receiver) {
+    if (key === RAW_KEY) {
+      return target
+    }
 
-		// 为什么直接把 symbol 去掉了呢，因为 for in 本身也不会迭代 Symbol
-		if (!isReadonly && typeof key !== 'symbol') {
-			track(target, key)
-		}
+    // 为什么直接把 symbol 去掉了呢，因为 for in 本身也不会迭代 Symbol
+    if (!isReadonly && typeof key !== 'symbol') {
+      track(target, key)
+    }
 
-		const result = Reflect.get(target, key, receiver)
-		if (isShallow) return result
+    const result = Reflect.get(target, key, receiver)
+    if (isShallow) return result
 
-		if (typeof result === 'object' && result !== null) {
-			return isReadonly ? readonly(result) : reactive(result)
-		}
-		return result
-	}
+    if (typeof result === 'object' && result !== null) {
+      return isReadonly ? readonly(result) : reactive(result)
+    }
+    return result
+  }
 }
 ```
 
@@ -1095,10 +1112,10 @@ function baseGet(isShallow, isReadonly) {
 ```javascript
 const arr = reactive(['A', 'B'])
 effect(() => {
-	console.log('effect触发')
-	for (const item of arr) {
-		console.log(item)
-	}
+  console.log('effect触发')
+  for (const item of arr) {
+    console.log(item)
+  }
 })
 console.log('*****修改length*****')
 arr.length = 0
@@ -1138,50 +1155,49 @@ console.log(arr.includes(arr[0])) // true
 // 创建对象，以重写数组方法名为 key，并绑定执行函数
 const arrayInstrumentations = {}
 ;['includes', 'indexOf', 'lastIndexOf'].forEach(key => {
-	arrayInstrumentations[key] = function (...args) {
-		// this ---> proxy
-		// 1、在 proxy 里面找一次
-		const proxyResult = Array.prototype[key].apply(this, args)
-		// 如果在代理中找到的结果为 true 或者不等于 -1，表示找到了，直接返回
-		if (
-			(typeof proxyResult === 'boolean' && proxyResult === true) ||
-			(typeof proxyResult === 'number' && proxyResult !== -1)
-		) {
-			return proxyResult
-		}
-		// 2、在原始数组中找一次
-		const rawResult = Array.prototype[key].apply(this[RAW_KEY], args)
-		// 直接返回原始数组中的结果
-		return rawResult
-	}
+  arrayInstrumentations[key] = function (...args) {
+    // this ---> proxy
+    // 1、在 proxy 里面找一次
+    const proxyResult = Array.prototype[key].apply(this, args)
+    // 如果在代理中找到的结果为 true 或者不等于 -1，表示找到了，直接返回
+    if (
+      (typeof proxyResult === 'boolean' && proxyResult === true) ||
+      (typeof proxyResult === 'number' && proxyResult !== -1)
+    ) {
+      return proxyResult
+    }
+    // 2、在原始数组中找一次
+    const rawResult = Array.prototype[key].apply(this[RAW_KEY], args)
+    // 直接返回原始数组中的结果
+    return rawResult
+  }
 })
 
 function baseGet(isShallow, isReadonly) {
-	return function get(target, key, receiver) {
-		if (key === RAW_KEY) {
-			return target
-		}
+  return function get(target, key, receiver) {
+    if (key === RAW_KEY) {
+      return target
+    }
 
-		// 如果访问的是重新的数组方法，则直接使用重新的方法
-		if (Array.isArray(target) && arrayInstrumentations.hasOwnProperty(key)) {
-			return Reflect.get(arrayInstrumentations, key, receiver)
-		}
+    // 如果访问的是重新的数组方法，则直接使用重新的方法
+    if (Array.isArray(target) && arrayInstrumentations.hasOwnProperty(key)) {
+      return Reflect.get(arrayInstrumentations, key, receiver)
+    }
 
-		const noKeys = [IS_REACTIVE, RAW_KEY, Symbol.iterator]
-		if (!isReadonly && !noKeys.includes(key)) {
-			track(target, key)
-		}
+    const noKeys = [IS_REACTIVE, RAW_KEY, Symbol.iterator]
+    if (!isReadonly && !noKeys.includes(key)) {
+      track(target, key)
+    }
 
-		const result = Reflect.get(target, key, receiver)
-		if (isShallow) return result
+    const result = Reflect.get(target, key, receiver)
+    if (isShallow) return result
 
-		if (typeof result === 'object' && result !== null) {
-			return isReadonly ? readonly(result) : reactive(result)
-		}
-		return result
-	}
+    if (typeof result === 'object' && result !== null) {
+      return isReadonly ? readonly(result) : reactive(result)
+    }
+    return result
+  }
 }
-
 ```
 
 执行结果如图：
@@ -1198,11 +1214,11 @@ function baseGet(isShallow, isReadonly) {
 const arr = reactive(['A'])
 // 第一个 effect
 effect(() => {
-	arr.push('B')
+  arr.push('B')
 })
 // 第二个 effect
 effect(() => {
-	arr.push('C')
+  arr.push('C')
 })
 ```
 
@@ -1225,44 +1241,44 @@ let shouldTrack = true
 
 // 暂停收集依赖
 function pauseTracking() {
-	shouldTrack = false
+  shouldTrack = false
 }
 
 // 恢复收集依赖
 function resumeTracking() {
-	shouldTrack = true
+  shouldTrack = true
 }
 
 const arrayInstrumentations = {}
 // 在重写一些方法
 ;['push', 'pop', 'shift', 'unshift', 'splice'].forEach(key => {
-	// 这些会改动数组的长度，造成额外的依赖收集，因此在这些方法运行期间，暂停依赖的收集
-	arrayInstrumentations[key] = function (...args) {
-		// 暂停依赖收集
-		pauseTracking()
-		const result = Array.prototype[key].apply(this, args)
-		// 恢复依赖收集
-		resumeTracking()
-		return result
-	}
+  // 这些会改动数组的长度，造成额外的依赖收集，因此在这些方法运行期间，暂停依赖的收集
+  arrayInstrumentations[key] = function (...args) {
+    // 暂停依赖收集
+    pauseTracking()
+    const result = Array.prototype[key].apply(this, args)
+    // 恢复依赖收集
+    resumeTracking()
+    return result
+  }
 })
 
 function track(target, key) {
-	// 停止收集依赖期间或者 activeFn 为空，则不收集
-	if (!shouldTrack || !activeFn) return
+  // 停止收集依赖期间或者 activeFn 为空，则不收集
+  if (!shouldTrack || !activeFn) return
 
-	let depsMap = targetMap.get(target)
-	if (!depsMap) {
-		depsMap = new Map()
-		targetMap.set(target, depsMap)
-	}
-	let deps = depsMap.get(key)
-	if (!deps) {
-		deps = new Set()
-		depsMap.set(key, deps)
-	}
-	deps.add(activeFn)
-	activeFn.deps.push(deps)
+  let depsMap = targetMap.get(target)
+  if (!depsMap) {
+    depsMap = new Map()
+    targetMap.set(target, depsMap)
+  }
+  let deps = depsMap.get(key)
+  if (!deps) {
+    deps = new Set()
+    depsMap.set(key, deps)
+  }
+  deps.add(activeFn)
+  activeFn.deps.push(deps)
 }
 ```
 
