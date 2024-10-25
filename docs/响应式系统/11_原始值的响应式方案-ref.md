@@ -35,7 +35,7 @@ name.value = 'vue3'
 
 ```javascript
 // 封装一个 ref 函数
-function ref(val){
+function ref(val) {
   // 在 ref 函数内创建包裹对象
   const wrapper = {
     value: val
@@ -96,10 +96,10 @@ ref 除了能够用于原始值的响应式方案之外，还可以用来解决�
 
 ```javascript
 export default {
-  setup(){
+  setup() {
     // 响应式数据
     const obj = reactive({ foo: 1, bar: 2 })
-    
+
     // 将数据暴露到模板中
     return {
       ...obj
@@ -135,7 +135,7 @@ const newObj = {
   ...obj
 }
 
-effect(()=>{
+effect(() => {
   // 在副作用函数内使用新的对象 newObj 读取 foo 属性值
   console.log(newObj.foo)
 })
@@ -152,18 +152,18 @@ const obj = reactive({ foo: 1, bar: 2 })
 // newObj 具备 obj 的同名属性，并且每个属性值都是一个对象，这个对象具备一个访问器属性 value，当读取 value 属性，其实读取的就是 obj 下对应的属性值
 const newObj = {
   foo: {
-    get value(){
+    get value() {
       return obj.foo
     }
-	},
+  },
   bar: {
-    get value(){
+    get value() {
       return obj.bar
     }
-	}
+  }
 }
 
-effect(()=>{
+effect(() => {
   console.log(newObj.foo)
 })
 
@@ -290,8 +290,8 @@ function proxyRefs(target) {
 
 ```javascript
 const myComp = {
-  setup(){
-		const count = ref(0)
+  setup() {
+    const count = ref(0)
     // 返回的这个对象会交给 proxyRefs 来处理
     return { count }
   }

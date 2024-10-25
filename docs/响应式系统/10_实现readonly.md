@@ -15,90 +15,92 @@ const noWarnKey = [RAW_KEY, IS_REACTIVE, ITERATE_KEY]
 
 // set
 function baseSet(isReadonly) {
-	return function set(target, key, newVal, receiver) {
-		// isReadonly 为 true 时，禁止修改，而一些内部属性则忽略
-		if (isReadonly && !noWarnKey.includes(key)) {
-			// 并弹出警告
-			console.warn('只读属性 ', key, ' 禁止修改')
-			return true
-		}
+  return function set(target, key, newVal, receiver) {
+    // isReadonly 为 true 时，禁止修改，而一些内部属性则忽略
+    if (isReadonly && !noWarnKey.includes(key)) {
+      // 并弹出警告
+      console.warn('只读属性 ', key, ' 禁止修改')
+      return true
+    }
 
-		const oldVal = target[key]
-		const type = Object.prototype.hasOwnProperty.call(target, key) ? TrggerType.SET : TrggerType.ADD
-		const result = Reflect.set(target, key, newVal, receiver)
-		if (!result) return
-		if (receiver[RAW_KEY] === target) {
-			if (!Object.is(oldVal, newVal)) {
-				trigger(target, key, type)
-			}
-		}
+    const oldVal = target[key]
+    const type = Object.prototype.hasOwnProperty.call(target, key)
+      ? TrggerType.SET
+      : TrggerType.ADD
+    const result = Reflect.set(target, key, newVal, receiver)
+    if (!result) return
+    if (receiver[RAW_KEY] === target) {
+      if (!Object.is(oldVal, newVal)) {
+        trigger(target, key, type)
+      }
+    }
 
-		return result
-	}
+    return result
+  }
 }
 
 // delete
 function baseDeleteProperty(isReadonly) {
-	return function deleteProperty(target, key) {
-		if (isReadonly && !noWarnKey.includes(key)) {
-			console.warn('只读属性 ', key, ' 禁止删除')
-			return true
-		}
+  return function deleteProperty(target, key) {
+    if (isReadonly && !noWarnKey.includes(key)) {
+      console.warn('只读属性 ', key, ' 禁止删除')
+      return true
+    }
 
-		const hadKey = Object.prototype.hasOwnProperty.call(target, key)
-		const result = Reflect.deleteProperty(target, key)
-		if (hadKey && result) {
-			trigger(target, key, TrggerType.DELETE)
-		}
-		return result
-	}
+    const hadKey = Object.prototype.hasOwnProperty.call(target, key)
+    const result = Reflect.deleteProperty(target, key)
+    if (hadKey && result) {
+      trigger(target, key, TrggerType.DELETE)
+    }
+    return result
+  }
 }
 
 // get
 function baseGet(isShallow, isReadonly) {
-	return function get(target, key, receiver) {
-		if (key === RAW_KEY) {
-			return target
-		}
+  return function get(target, key, receiver) {
+    if (key === RAW_KEY) {
+      return target
+    }
 
-		// 只有当前的对象是一个非只读数据时，才需要收集依赖
-		if (!isReadonly) {
-			track(target, key)
-		}
+    // 只有当前的对象是一个非只读数据时，才需要收集依赖
+    if (!isReadonly) {
+      track(target, key)
+    }
 
-		const result = Reflect.get(target, key, receiver)
-		if (isShallow) return result
-		if (typeof result === 'object' && result !== null) {
-			return reactive(result)
-		}
-		return result
-	}
+    const result = Reflect.get(target, key, receiver)
+    if (isShallow) return result
+    if (typeof result === 'object' && result !== null) {
+      return reactive(result)
+    }
+    return result
+  }
 }
 
 function createReactiveObject(value, isShallow = false) {
-	if (typeof value !== 'object' || value === null) {
-		console.warn('value 必须是一个对象')
-		return value
-	}
-	if (reactiveMap.has(value)) {
-		return reactiveMap.get(value)
-	}
-	if (isReactive(value)) return value
+  if (typeof value !== 'object' || value === null) {
+    console.warn('value 必须是一个对象')
+    return value
+  }
+  if (reactiveMap.has(value)) {
+    return reactiveMap.get(value)
+  }
+  if (isReactive(value)) return value
 
-	const proxy = new Proxy(value, {
-		get: baseGet(isShallow),
-		set: baseSet(isReadonly),
-		has,
-		ownKeys,
-		deleteProperty: baseDeleteProperty(isReadonly)
-	})
-	proxy[IS_REACTIVE] = true
-	reactiveMap.set(value, proxy)
-	return proxy
+  const proxy = new Proxy(value, {
+    get: baseGet(isShallow),
+    set: baseSet(isReadonly),
+    has,
+    ownKeys,
+    deleteProperty: baseDeleteProperty(isReadonly)
+  })
+  proxy[IS_REACTIVE] = true
+  reactiveMap.set(value, proxy)
+  return proxy
 }
 
 function readonly(value) {
-	return createReactiveObject(value, false, true)
+  return createReactiveObject(value, false, true)
 }
 ```
 
@@ -120,10 +122,10 @@ console.log(r1)
 
 ```javascript
 const obj = {
-	a: 1,
-	b: {
-		c: 3
-	}
+  a: 1,
+  b: {
+    c: 3
+  }
 }
 const r1 = readonly(obj)
 r1.b.c++
@@ -141,26 +143,26 @@ console.log(r1)
 
 ```javascript
 function baseGet(isShallow, isReadonly) {
-	return function get(target, key, receiver) {
-		if (key === RAW_KEY) {
-			return target
-		}
+  return function get(target, key, receiver) {
+    if (key === RAW_KEY) {
+      return target
+    }
 
-		// 只有当前的对象是一个非只读数据时，才需要收集依赖
-		if (!isReadonly) {
-			track(target, key)
-		}
+    // 只有当前的对象是一个非只读数据时，才需要收集依赖
+    if (!isReadonly) {
+      track(target, key)
+    }
 
-		const result = Reflect.get(target, key, receiver)
-		if (isShallow) return result
+    const result = Reflect.get(target, key, receiver)
+    if (isShallow) return result
 
-		// 在此处进行递归处理
-		if (typeof result === 'object' && result !== null) {
-			// 若开启了只读，则使用 readonly 函数包装结果，实现递归处理每一层
-			return isReadonly ? readonly(result) : reactive(result)
-		}
-		return result
-	}
+    // 在此处进行递归处理
+    if (typeof result === 'object' && result !== null) {
+      // 若开启了只读，则使用 readonly 函数包装结果，实现递归处理每一层
+      return isReadonly ? readonly(result) : reactive(result)
+    }
+    return result
+  }
 }
 ```
 
@@ -172,9 +174,9 @@ function baseGet(isShallow, isReadonly) {
 
 ```javascript
 function shallowReadonly(value) {
-	// 只需要将 isShallow 设置为 true 即可，表示只处理第一层
+  // 只需要将 isShallow 设置为 true 即可，表示只处理第一层
   // - 设置 isShallow 为 true 后，在 get 中，就会直接返回这个属性的原有的值，不做代理、只读或者其他处理
-	return createReactiveObject(value, true, true)
+  return createReactiveObject(value, true, true)
 }
 ```
 
