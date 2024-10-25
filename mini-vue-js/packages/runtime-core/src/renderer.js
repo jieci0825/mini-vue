@@ -1,6 +1,6 @@
 import { EMPTY_OBJ, isArray, isObject, isString } from '@vue/shared'
 import { normalizeClass } from './normalizeProp'
-import { isSameVNodeType } from './vnode'
+import { isSameVNodeType, Text } from './vnode'
 
 export function createRenderer(options) {
   return baseCreateRenderer(options)
@@ -11,7 +11,9 @@ function baseCreateRenderer(options) {
     createElement: hostCreateElement,
     setText: hostSetText,
     insert: hostInsert,
-    patchProp: hostPatchProp
+    patchProp: hostPatchProp,
+    createText: hostCreateText,
+    createComment: hostCreateComment
   } = options
 
   function patch(n1, n2, container) {
@@ -30,6 +32,26 @@ function baseCreateRenderer(options) {
         patchElement(n1, n2)
       }
     }
+    // 处理文本节点
+    else if (type === Text) {
+      if (!n1) {
+        mountText(n2, container)
+      } else {
+        patchText(n1, n2)
+      }
+    } else if (type === Comment) {
+      if (!n1) {
+        mountComment(n2, container)
+      } else {
+        patchComment(n1, n2)
+      }
+    } else if (type === Fragment) {
+      if (!n1) {
+        mountFragment(n2, container)
+      } else {
+        patchFragment(n1, n2, container)
+      }
+    }
     // 如果是对象表示是组件
     else if (isObject(type)) {
       // todo 处理组件
@@ -38,7 +60,54 @@ function baseCreateRenderer(options) {
     }
   }
 
+  function mountFragment(vnode, container) {
+    // 因为 Fragment 本身不渲染，只会渲染子节点，所以这里只要处理子节点即可
+    vnode.children.forEach(child => {
+      patch(null, child, container)
+    })
+  }
+
+  function patchFragment(n1, n2, container) {
+    // 更新也是一样，只需要更新子节点即可
+    //  - patchChildren 在前文已经实现
+    patchChildren(n1, n2, container)
+  }
+
+  function patchComment(n1, n2) {
+    const el = (n2.el = n1.el)
+    if (n2.children !== n1.children) {
+      hostSetText(el, n2.children)
+    }
+  }
+
+  function mountComment(vnode, container) {
+    const el = (vnode.el = hostCreateComment(vnode.children))
+    hostInsert(el, container)
+  }
+
+  function patchText(n1, n2) {
+    const el = (n2.el = n1.el)
+    if (n2.children !== n1.children) {
+      hostSetText(el, n2.children)
+    }
+  }
+
+  function mountText(vnode, container) {
+    // 创建文本节点
+    const el = (vnode.el = hostCreateText(vnode.children))
+    // 插入文本节点内容
+    hostInsert(el, container)
+  }
+
   function unmount(vnode) {
+    // 卸载时，如果是 Fragment 则需要卸载子节点
+    if (vnode.type === Fragment) {
+      vnode.children.forEach(child => {
+        unmount(child)
+      })
+      return
+    }
+
     const { el } = vnode
     const parent = el.parentNode
     if (parent) {

@@ -1,3 +1,4 @@
+export { Fragment, Text, Comment } from '@vue/runtime-core'
 export { render } from '@vue/runtime-dom'
 export { createRenderer } from '@vue/runtime-core'
 export { queuePreFlushCbs, watch } from '@vue/runtime-core'

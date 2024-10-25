@@ -1,12 +1,5 @@
 const doc = document
 
-function shouldSetAsProps(el, key, value) {
-  // 特殊处理
-  if (key === 'form' && el.tagName === 'INPUT') return false
-  // 正常处理
-  return key in el
-}
-
 export const nodeOps = {
   createElement(tag) {
     return doc.createElement(tag)
@@ -16,5 +9,11 @@ export const nodeOps = {
   },
   insert(el, parent, anchor = null) {
     parent.insertBefore(el, anchor)
+  },
+  createText(text) {
+    return doc.createTextNode(text)
+  },
+  createComment(text) {
+    return doc.createComment(text)
   }
 }
