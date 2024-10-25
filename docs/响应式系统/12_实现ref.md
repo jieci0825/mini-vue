@@ -90,7 +90,7 @@ class RefImpl {
 
 ```javascript
 function toReactive(value) {
-	return isObject(value) ? reactive(value) : value
+  return isObject(value) ? reactive(value) : value
 }
 ```
 
@@ -189,7 +189,7 @@ class RefImpl {
     return this._value
   }
 
- 	// 省略部分代码
+  // 省略部分代码
 }
 ```
 
@@ -200,7 +200,7 @@ class RefImpl {
 3. trackEffects 执行的时候，就会将当前激活的 activeEffect 加入到这个 deps 中，activeEffect.depSetList.push(deps) 则是为了处理上一次的旧依赖，这一点翻阅前面的章节即可
 4. 换而言之，这里并没有把 ref 的依赖放入一个 targetMap 数据中，而是将其保存到了当前的 ref 实例中，即 this.deps
 
-所以知道了依赖的存放只处，那么剩下的只是在需要派发更新的时候，将这些依赖重新执行即可，如下：
+所以知道了依赖的存放处，那么剩下的只是在需要派发更新的时候，将这些依赖重新执行即可，如下：
 
 ```javascript
 function triggerRefValue(refIns) {
@@ -221,14 +221,7 @@ function triggerEffects(effetsToRun) {
 
 class RefImpl {
   // 省略部分代码
-
-  set value(newValuefunction triggerEffects(effetsToRun) {
-  if (effetsToRun) {
-    effetsToRun.forEach(effect => {
-      triggerEffect(effect)
-    })
-  }
-}) {
+  set value(newValue) {
     if (!hasChanged(this._value, newValue)) return
     this._rawValue = newValue
     this._value = this._isShallow ? newValue : toReactive(newValue)
