@@ -154,7 +154,7 @@ Fragment 是 vue3 新增的一个 vnode 类型，在实现这个类型之前，�
 
 ```html
 <List>
-	<Items />
+  <Items />
 </List>
 ```
 
