@@ -197,7 +197,7 @@ Fragment 是 vue3 新增的一个 vnode 类型，在实现这个类型之前，�
 </List>
 ```
 
-类似的组合还有 <select> 和 <options> 这两个标签，而 vue3 中支持多个根节点模板，所以不存在这个问题，而 vue3 中是如何描述这个多根节点模板呢？就是利用 Fragment 来进行包裹，如下：
+类似的组合还有 select 和 options 这两个标签，而 vue3 中支持多个根节点模板，所以不存在这个问题，而 vue3 中是如何描述这个多根节点模板呢？就是利用 Fragment 来进行包裹，如下：
 
 ```javascript
 const Fragment = Symbol('fragment')
