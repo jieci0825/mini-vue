@@ -193,7 +193,7 @@ Fragment 是 vue3 新增的一个 vnode 类型，在实现这个类型之前，�
 
 ```html
 <List>
- <Items v-for="item in list"></Items>
+  <Items v-for="item in list"></Items>
 </List>
 ```
 
@@ -216,7 +216,7 @@ const vnode = {
 
 ```html
 <List>
-	<Items />
+  <Items />
 </List>
 ```
 
