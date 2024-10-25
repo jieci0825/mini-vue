@@ -96,6 +96,65 @@ function baseCreateRenderer(options) {
         }
       }
     }
+
+    patchChildren(n1, n2, el)
+  }
+
+  function patchChildren(n1, n2, container) {
+    // 判断新vnode的 children 是否是文本节点
+    if (isString(n2.children)) {
+      // 旧节点有三种情况：文本节点、数组、空
+      // 如果旧节点是一个数组时，则将旧节点依次卸载
+      if (isArray(n1.children)) {
+        n1.children.forEach(child => {
+          unmount(child)
+        })
+      }
+      // 如果旧节点不存在或者是文本节点，且不一致时，则更新为文本节点
+      if (n1.children !== n2.children) {
+        hostSetText(container, n2.children)
+      }
+    }
+    // 新vnode 的 children 是一个数组
+    else if (isArray(n2.children)) {
+      // 如果旧节点的 children 也是数组，则需要进行 diff 算法
+      if (isArray(n1.children)) {
+        // diff 算法
+        // 目前暂时还未涉及 diff 算法，所以使用暴力的循环进行更新
+
+        // 先卸载旧节点
+        n1.children.forEach(child => {
+          unmount(child)
+        })
+
+        // 再挂载新节点
+        n2.children.forEach(child => {
+          patch(null, child, container)
+        })
+      } else {
+        // 此时旧节点只能是文本节点或者空
+        // 但是不管是那个情况，直接清空旧节点即可
+        hostSetText(container, '')
+        // 依次挂载新节点
+        n2.children.forEach(child => {
+          patch(null, child, container)
+        })
+      }
+    }
+    // 新节点的 children 是空
+    else {
+      // 如果旧节点children是一个数组，则依次卸载
+      if (isArray(n1.children)) {
+        n1.children.forEach(child => {
+          unmount(child)
+        })
+      }
+      // 如果旧节点children是文本节点，则清空
+      if (isString(n1.children)) {
+        hostSetText(container, '')
+      }
+      // 新旧节点的 children 都是空，则不需要处理
+    }
   }
 
   function render(vnode, container) {
