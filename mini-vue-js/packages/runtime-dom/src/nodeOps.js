@@ -8,7 +8,11 @@ export const nodeOps = {
     el.textContent = text
   },
   insert(el, parent, anchor = null) {
-    parent.insertBefore(el, anchor)
+    if (anchor) {
+      parent.insertBefore(el, anchor)
+    } else {
+      parent.appendChild(el)
+    }
   },
   createText(text) {
     return doc.createTextNode(text)

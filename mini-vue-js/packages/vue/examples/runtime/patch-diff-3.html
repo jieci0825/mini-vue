@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Document</title>
+</head>
+
+<body>
+  <div id="app"></div>
+
+  <script src="../../dist/mini-vue.js"></script>
+  <script>
+    const { render } = MiniVue
+
+    const oldVNode = {
+      type: 'div',
+      children: [
+        { type: 'p', children: '1', key: 1 },
+        { type: 'p', children: '2', key: 2 },
+        { type: 'p', children: 'hello', key: 3 },
+      ]
+    }
+
+    const newVNode = {
+      type: 'div',
+      children: [
+        { type: 'p', children: '1', key: 1 },
+        { type: 'p', children: 'world', key: 3 },
+        { type: 'p', children: '2', key: 2 },
+      ]
+    }
+
+    render(oldVNode, document.querySelector('#app'))
+
+    window.update = () => {
+      render(newVNode, document.querySelector('#app'))
+    }
+  </script>
+</body>
+
+</html>

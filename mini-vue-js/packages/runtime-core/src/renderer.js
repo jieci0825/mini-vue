@@ -1,6 +1,6 @@
 import { EMPTY_OBJ, isArray, isObject, isString } from '@vue/shared'
 import { normalizeClass } from './normalizeProp'
-import { isSameVNodeType, Text } from './vnode'
+import { Fragment, isSameVNodeType, Text } from './vnode'
 
 export function createRenderer(options) {
   return baseCreateRenderer(options)
@@ -188,18 +188,63 @@ function baseCreateRenderer(options) {
     else if (isArray(n2.children)) {
       // 如果旧节点的 children 也是数组，则需要进行 diff 算法
       if (isArray(n1.children)) {
-        // diff 算法
-        // 目前暂时还未涉及 diff 算法，所以使用暴力的循环进行更新
+        const oldChildren = n1.children
+        const newChildren = n2.children
+        if (newChildren[0].key) {
+          // 存储寻找过程中遇到的最大索引值
+          let lastIndex = 0
+          for (let i = 0; i < newChildren.length; i++) {
+            const newChild = newChildren[i]
+            let j = 0
+            // 定义变量 find，用于判断是否找到了可复用的节点
+            let find = false
+            for (j; j < oldChildren.length; j++) {
+              const oldChild = oldChildren[j]
+              if (isSameVNodeType(newChild, oldChild)) {
+                // 如果找到了可复用的节点，则将 find 设置为 true
+                find = true
+                patch(oldChild, newChild, container)
+                if (j < lastIndex) {
+                  const prevVNode = newChildren[i - 1]
+                  if (prevVNode) {
+                    const anchor = prevVNode.el.nextSibling
+                    hostInsert(newChild.el, container, anchor)
+                  }
+                } else {
+                  lastIndex = j
+                }
+                break
+              }
+            }
 
-        // 先卸载旧节点
-        n1.children.forEach(child => {
-          unmount(child)
-        })
+            // 如果此时 find 还为 false，则说明没有找到可复用的节点，需要进行挂载
+            if (!find) {
+              const prevVNode = newChildren[i - 1]
+              let anchor = null
+              if (prevVNode) {
+                // 如果有前一个节点，则使用前一个节点的下一个兄弟节点作为锚点
+                anchor = prevVNode.el.nextSibling
+              } else {
+                // 如果没有前一个节点，则使用父节点的第一个子节点作为锚点
+                anchor = container.firstChild
+              }
+              // 挂载
+              patch(null, newChild, container, anchor)
+            }
+          }
 
-        // 再挂载新节点
-        n2.children.forEach(child => {
-          patch(null, child, container)
-        })
+          // 卸载多余的节点
+          for (let i = 0; i < oldChildren.length; i++) {
+            const oldChild = oldChildren[i]
+            // 如果旧节点在 newVhildren 中不存在，则卸载
+            const has = newChildren.find(n => n.key === oldChild.key)
+            if (!has) {
+              unmount(oldChild)
+            }
+          }
+        } else {
+          patchUnkeyedChildren(oldChildren, newChildren, container)
+        }
       } else {
         // 此时旧节点只能是文本节点或者空
         // 但是不管是那个情况，直接清空旧节点即可
@@ -223,6 +268,34 @@ function baseCreateRenderer(options) {
         hostSetText(container, '')
       }
       // 新旧节点的 children 都是空，则不需要处理
+    }
+  }
+
+  function patchKeyedChildren(c1, c2, container) {}
+
+  function patchUnkeyedChildren(c1, c2, container) {
+    // 获取新子节点长度
+    const newLen = c2.length
+    // 获取旧子节点长度
+    const oldLen = c1.length
+    // 获取最小长度
+    const minLen = Math.min(oldLen, newLen)
+    // 使用最小值依次比较新旧子节点，完成公共节点的复用
+    for (let i = 0; i < minLen; i++) {
+      patch(c1[i], c2[i], container)
+    }
+
+    // 如果新子节点长度大于旧子节点长度，则说明有新增节点，则新增节点
+    if (newLen > oldLen) {
+      c2.slice(minLen).forEach(child => {
+        patch(null, child, container)
+      })
+    }
+    // 如果旧子节点长度大于新子节点长度，则说明有删除节点，则删除节点
+    else if (newLen < minLen) {
+      c1.slice(newLen).forEach(child => {
+        unmount(child)
+      })
     }
   }
 
