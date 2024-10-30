@@ -6,21 +6,7 @@ function patchChildren(n1, n2, container) {
       const oldChildren = n1.children
       const newChildren = n2.children
       if (newChildren[0].key) {
-        // 存储寻找过程中遇到的最大索引值
-        let lastIndex = 0
-        for (let i = 0; i < newChildren.length; i++) {
-          // 省略
-        }
-        // 上一步更新操作完成之后
-        // 卸载多余的节点
-        for (let i = 0; i < oldChildren.length; i++) {
-          const oldChild = oldChildren[i]
-          // 如果旧节点在 newVhildren 中不存在，则卸载
-          const has = newChildren.find(n => n.key === oldChild.key)
-          if (!has) {
-            unmount(oldChild)
-          }
-        }
+        patchKeyedChildren(oldChildren, newChildren, container)
       } else {
         patchUnkeyedChildren(oldChildren, newChildren, container)
       }
@@ -29,5 +15,25 @@ function patchChildren(n1, n2, container) {
     }
   } else {
     // 省略
+  }
+}
+
+function patchKeyedChildren(c1, c2, container) {
+  // 省略
+
+  while (oldStartIdx <= oldEndIdx && newStartIdx <= newEndIdx) {
+    // 省略
+  }
+
+  // 循环结束之后检查索引值的情况
+  if (oldEndIdx < oldStartIdx && newStartIdx <= newEndIdx) {
+    // 挂载-省略
+  } else if (newEndIdx < newStartIdx && oldStartIdx <= oldEndIdx) {
+    // newEndIdx 小于 newStartIdx，表示新节点遍历完了
+    // 且如果此时 oldStartIdx 小于或等于 oldEndIdx，表示还有旧节点没有处理，需要进行卸载
+    // 可能存在多个，所以要使用 for 循环来处理
+    for (let i = oldStartIdx; i <= oldEndIdx; i++) {
+      unmount(c1[i])
+    }
   }
 }
