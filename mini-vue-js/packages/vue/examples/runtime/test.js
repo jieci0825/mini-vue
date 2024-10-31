@@ -21,19 +21,58 @@ function patchChildren(n1, n2, container) {
 function patchKeyedChildren(c1, c2, container) {
   // 省略
 
-  while (oldStartIdx <= oldEndIdx && newStartIdx <= newEndIdx) {
+  if (j > oldEnd && j <= newEnd) {
     // 省略
-  }
+  } else if (oldEnd >= j && j > newEnd) {
+    // 省略
+  } else {
+    // 省略
 
-  // 循环结束之后检查索引值的情况
-  if (oldEndIdx < oldStartIdx && newStartIdx <= newEndIdx) {
-    // 挂载-省略
-  } else if (newEndIdx < newStartIdx && oldStartIdx <= oldEndIdx) {
-    // newEndIdx 小于 newStartIdx，表示新节点遍历完了
-    // 且如果此时 oldStartIdx 小于或等于 oldEndIdx，表示还有旧节点没有处理，需要进行卸载
-    // 可能存在多个，所以要使用 for 循环来处理
-    for (let i = oldStartIdx; i <= oldEndIdx; i++) {
-      unmount(c1[i])
+    for (let i = oldStart; i <= oldEnd; i++) {
+      // 省略
+    }
+
+    if (moved) {
+      const seq = lis(source)
+
+      // s 指向最长递增子序列的最后一个元素的索引
+      let s = seq.length - 1
+      // i 指向新的一组子节点的最后一个节点的索引
+      let i = count - 1
+      // 从后向前遍历，依次处理需要移动的节点
+      for (i; i >= 0; i--) {
+        if (i !== seq[s]) {
+          // 如果节点的索引 i 不等于最长递增子序列的最后一个元素的索引 s
+          // 则说明该节点需要移动
+        } else {
+          // 如果节点的索引 i 等于最长递增子序列的最后一个元素的索引 s
+          // 则说明该节点不需要移动，更新 s 的值
+          s--
+        }
+      }
+    }
+  }
+}
+
+if (moved) {
+  const seq = lis(source)
+  let s = seq.length - 1
+  let i = count - 1
+  for (i; i >= 0; i--) {
+    if (source[i] === -1) {
+      // 省略
+    } else if (i !== seq[s]) {
+      // 获取这个节点在 newChildren 中的位置索引
+      const pos = i + newStart
+      const newVNode = c2[pos]
+      // 这个节点的下一个节点位置索引
+      const nextPos = pos + 1
+      // 获取锚点元素
+      const anchor = nextPos < c2.length ? c2[nextPos].el : null
+      // 移动
+      hostInsert(newVNode.el, container, anchor)
+    } else {
+      s--
     }
   }
 }

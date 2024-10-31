@@ -222,95 +222,150 @@ function baseCreateRenderer(options) {
   }
 
   function patchKeyedChildren(c1, c2, container) {
-    // 四个索引值
-    let oldStartIdx = 0
-    let oldEndIdx = c1.length - 1
-    let newStartIdx = 0
-    let newEndIdx = c2.length - 1
+    // 处理相同的前置节点
+    let j = 0
+    let oldVNode = c1[j]
+    let newVNode = c2[j]
 
-    // 四个节点
-    let oldStartVNode = c1[oldStartIdx]
-    let oldEndVNode = c1[oldEndIdx]
-    let newStartVNode = c2[newStartIdx]
-    let newEndVNode = c2[newEndIdx]
-
-    // 设置循环条件，防止数组越界
-    while (oldStartIdx <= oldEndIdx && newStartIdx <= newEndIdx) {
-      // 增加两个判断分支，如果头尾部节点为 undefined，表示处理过了，则跳过
-      if (!oldStartVNode) {
-        oldStartVNode = c1[++oldStartIdx]
-      } else if (!oldEndVNode) {
-        oldEndVNode = c1[--oldEndIdx]
-      } else if (isSameVNodeType(oldStartVNode, newStartVNode)) {
-        // 第一步
-        patch(oldStartVNode, newStartVNode, container)
-        // 更新索引值
-        oldStartVNode = c1[++oldStartIdx]
-        newStartVNode = c2[++newStartIdx]
-      } else if (isSameVNodeType(oldEndVNode, newEndVNode)) {
-        // 第二步
-        // 新节点顺序也处于尾部，不需要移动，但仍需打补丁
-        patch(oldEndVNode, newEndVNode, container)
-        // 更新索引值
-        oldEndVNode = c1[--oldEndIdx]
-        newEndVNode = c2[--newEndIdx]
-      } else if (isSameVNodeType(oldStartVNode, newEndVNode)) {
-        // 第三步
-        // 打补丁
-        patch(oldStartVNode, newEndVNode, container)
-        // 移动 DOM，将 oldStartVNode.el 移动到 oldEndVNode.el 的下一个兄弟节点之前
-        // - 此时 oldEndVNode 是相对遍历比较的最后一个节点，而非是真实 DOM 的最后一个节点
-        hostInsert(oldStartVNode.el, container, oldEndVNode.el.nextSibling)
-        // 更新索引
-        oldStartVNode = c1[++oldStartIdx]
-        newEndVNode = c2[--newEndIdx]
-      } else if (isSameVNodeType(oldEndVNode, newStartVNode)) {
-        // 第四步
-        patch(oldEndVNode, newStartVNode, container)
-        hostInsert(oldEndVNode.el, container, oldStartVNode.el)
-        oldEndVNode = c1[--oldEndIdx]
-        newStartVNode = c2[++newStartIdx]
-      } else {
-        // 处理其他情况
-        const idxInOld = c1.findIndex(node => {
-          return isSameVNodeType(node, newStartVNode)
-        })
-
-        // 如果大于 0 则是找到了，等于 0 是不存在的，因为前面四步就校验过了
-        if (idxInOld > 0) {
-          const vnodeToMove = c1[idxInOld]
-          // 打补丁
-          patch(vnodeToMove, newStartVNode, container)
-          // 移动 DOM
-          hostInsert(vnodeToMove.el, container, oldStartVNode.el)
-          // 由于 idxInOld 位置的节点已经移动，所以需要设置为 undefined
-          c1[idxInOld] = undefined
-        } else {
-          // 如果没有找到，则创建新节点，并传入锚点
-          patch(null, newStartVNode, container, oldStartVNode.el)
-        }
-        // 更新索引
-        newStartVNode = c2[++newStartIdx]
-      }
+    // while 循环，向后遍历，直到遇到不一样的节点为止
+    while (isSameVNodeType(oldVNode, newVNode)) {
+      // 打补丁
+      patch(oldVNode, newVNode, container)
+      // 更新索引
+      j++
+      // 更新节点
+      oldVNode = c1[j]
+      newVNode = c2[j]
     }
 
-    // 循环结束之后检查索引值的情况
-    if (oldEndIdx < oldStartIdx && newStartIdx <= newEndIdx) {
-      // oldEndIdx 小于 oldStartIdx，表示旧节点遍历完了
-      // newStartIdx 小于或等于 newEndIdx，表示还有新节点没有处理，需要进行挂载
-      // 可能存在多个，所以要使用 for 循环来处理
-      for (let i = newStartIdx; i <= newEndIdx; i++) {
-        // 锚点：如果 newEndIdx 下一个节点存在，则使用下一个节点，否则使用 null
-        //  - 为 null 则表示这个多余的节点是处于尾部
-        const anchor = c2[newEndIdx + 1] ? c2[newEndIdx + 1].el : null
-        patch(null, c2[i], container, anchor)
+    // 处理相同的后置节点
+    let oldEnd = c1.length - 1
+    let newEnd = c2.length - 1
+    oldVNode = c1[oldEnd]
+    newVNode = c2[newEnd]
+
+    while (isSameVNodeType(oldVNode, newVNode)) {
+      // 打补丁
+      patch(oldVNode, newVNode, container)
+      // 更新索引
+      oldEnd--
+      newEnd--
+      // 更新节点
+      oldVNode = c1[oldEnd]
+      newVNode = c2[newEnd]
+    }
+
+    // 预处理完毕之后，如果满足以下条件，则进行新增
+    if (j > oldEnd && j <= newEnd) {
+      // 获取锚点的位置
+      const nextPos = newEnd + 1
+      // 获取锚点元素
+      const anchor = nextPos < c2.length ? c2[nextPos].el : null
+      // 进行循环遍历，依次新增节点
+      while (j <= newEnd) {
+        patch(null, c2[j++], container, anchor)
       }
-    } else if (newEndIdx < newStartIdx && oldStartIdx <= oldEndIdx) {
-      // newEndIdx 小于 newStartIdx，表示新节点遍历完了
-      // 且如果此时 oldStartIdx 小于或等于 oldEndIdx，表示还有旧节点没有处理，需要进行卸载
-      // 可能存在多个，所以要使用 for 循环来处理
-      for (let i = oldStartIdx; i <= oldEndIdx; i++) {
-        unmount(c1[i])
+    } else if (oldEnd >= j && j > newEnd) {
+      // 进行循环遍历，依次卸载节点
+      while (j <= oldEnd) {
+        unmount(c1[j++])
+      }
+    } else {
+      // 新的一组节点中剩余需要处理节点的数量
+      const count = newEnd - j + 1
+      // 构造 source 数组
+      const source = new Array(count)
+      source.fill(-1)
+
+      // 设置起始索引
+      const oldStart = j
+      const newStart = j
+      // 新增两个变量
+      let moved = false
+      let pos = 0
+
+      // 构建索引表
+      const keyIndex = {}
+      for (let i = newStart; i <= newEnd; i++) {
+        // 以 vnode 的 key 属性为键，在 newChildren 中的索引为值
+        keyIndex[c2[i].key] = i
+      }
+
+      // 记录更新过的节点的数量
+      let patched = 0
+      // 遍历 oldChildren 中未处理的节点
+      for (let i = oldStart; i <= oldEnd; i++) {
+        const oldVNode = c1[i]
+        if (patched <= count) {
+          // 通过 旧节点的 key 在索引表中获取索引值
+          const k = keyIndex[oldVNode.key]
+
+          // 如果索引存在，则说明该节点需要移动
+          if (k !== undefined) {
+            const newVNode = c2[k]
+            // 打补丁
+            patch(oldVNode, newVNode, container)
+            // 更新 source 数组-记录下这个新节点在 oldChildren 中的索引位置
+            source[k - newStart] = i
+            // 每更新一个节点，patched++
+            patched++
+
+            // 判断节点是否需要移动
+            //  - 即采用类似递增索引的方式来判断是否需要移动
+            if (k < pos) {
+              moved = true
+            } else {
+              pos = k
+            }
+          } else {
+            // 如果索引不存在，说明这个旧的vnode在 newChildren 中不存在，说明该节点需要卸载
+            unmount(oldVNode)
+          }
+        } else {
+          // 如果更新过的节点数量大于需要更新的节点数量，则说明剩下的 oldChildren 中的节点都是需要卸载的
+          unmount(oldVNode)
+        }
+      }
+
+      if (moved) {
+        const seq = getSequence(source)
+
+        // s 指向最长递增子序列的最后一个元素的索引
+        let s = seq.length - 1
+        // i 指向新的一组子节点的最后一个节点的索引
+        let i = count - 1
+        // 从后向前遍历，依次处理需要移动的节点
+        for (i; i >= 0; i--) {
+          if (source[i] === -1) {
+            // 如果为 -1，说明该节点是新增的
+            // 获取这个新增节点在 newChildren 中的位置索引
+            const pos = i + newStart
+            const newVNode = c2[pos]
+            // 这个节点的下一个节点位置索引
+            const nextPos = pos + 1
+            // 获取锚点元素
+            const anchor = nextPos < c2.length ? c2[nextPos].el : null
+            // 挂载
+            patch(null, newVNode, container, anchor)
+          } else if (i !== seq[s]) {
+            // 如果节点的索引 i 不等于最长递增子序列的最后一个元素的索引 s
+            // 则说明该节点需要移动
+
+            // 获取这个节点在 newChildren 中的位置索引
+            const pos = i + newStart
+            const newVNode = c2[pos]
+            // 这个节点的下一个节点位置索引
+            const nextPos = pos + 1
+            // 获取锚点元素
+            const anchor = nextPos < c2.length ? c2[nextPos].el : null
+            // 移动
+            hostInsert(newVNode.el, container, anchor)
+          } else {
+            // 如果节点的索引 i 等于最长递增子序列的最后一个元素的索引 s
+            // 则说明该节点不需要移动，更新 s 的值
+            s--
+          }
+        }
       }
     }
   }
@@ -355,4 +410,46 @@ function baseCreateRenderer(options) {
   return {
     render
   }
+}
+
+// https://en.wikipedia.org/wiki/Longest_increasing_subsequence
+function getSequence(arr) {
+  const p = arr.slice()
+  const result = [0]
+  let i, j, u, v, c
+  const len = arr.length
+  for (i = 0; i < len; i++) {
+    const arrI = arr[i]
+    if (arrI !== 0) {
+      j = result[result.length - 1]
+      if (arr[j] < arrI) {
+        p[i] = j
+        result.push(i)
+        continue
+      }
+      u = 0
+      v = result.length - 1
+      while (u < v) {
+        c = (u + v) >> 1
+        if (arr[result[c]] < arrI) {
+          u = c + 1
+        } else {
+          v = c
+        }
+      }
+      if (arrI < arr[result[u]]) {
+        if (u > 0) {
+          p[i] = result[u - 1]
+        }
+        result[u] = i
+      }
+    }
+  }
+  u = result.length
+  v = result[u - 1]
+  while (u-- > 0) {
+    result[u] = v
+    v = p[v]
+  }
+  return result
 }
