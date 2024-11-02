@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Document</title>
+</head>
+
+<body>
+  <div id="app"></div>
+
+
+
+  <script src="../../dist/mini-vue.js"></script>
+  <script>
+    const { render, ref } = MiniVue
+
+    const Child = {
+      setup(props, context) {
+      },
+      render() {
+        return {
+          type: 'div',
+          children: [
+            {
+              type: 'h1',
+              children: [this.$slots.header()]
+            },
+            {
+              type: 'h2',
+              children: [this.$slots.body()]
+            },
+            {
+              type: 'h3',
+              children: [this.$slots.footer()]
+            }
+          ]
+        }
+      }
+    }
+
+    const Parent = {
+      setup(props, context) {
+      },
+
+      render() {
+        return {
+          type: 'div',
+          children: [
+            {
+              type: 'h1',
+              children: '父组件'
+            },
+            {
+              type: Child,
+              children: {
+                header() {
+                  return { type: 'span', children: '我是标题-slot' }
+                },
+                body() {
+                  return { type: 'section', children: '我是内容-slot' }
+                },
+                footer() {
+                  return { type: 'p', children: '我是注脚-slot' }
+                }
+              }
+            }
+          ]
+        }
+      }
+    }
+
+    const vnode = {
+      type: Parent,
+    }
+
+    render(vnode, document.querySelector('#app'))
+  </script>
+</body>
+
+</html>

@@ -1,6 +1,8 @@
+// 采用 set 结构，实现对任务的自动去重
 const jobQueue = new Set()
 const p = Promise.resolve()
 
+// 表示是否正在刷新任务队列
 let isFlushing = false
 
 export function nextTick(fn) {
@@ -17,6 +19,7 @@ export function flushJob() {
     jobQueue.forEach(job => job())
   }).finally(() => {
     isFlushing = false
+    jobQueue.clear()
   })
 }
 

@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Document</title>
+</head>
+
+<body>
+  <div id="app"></div>
+
+  <script src="../../dist/mini-vue.js"></script>
+  <script>
+    const { render } = MiniVue
+
+    const Child = {
+      // 组件接收名为 title 的 props，并且该 props 的类型为 String 
+      props: {
+        title: {
+          type: String
+        }
+      },
+      render() {
+        return {
+          type: 'div',
+          children: `msg: ${this.title}`
+        }
+      }
+    }
+
+    const Parent = {
+      data() {
+        return {
+          count: 1,
+          msg: 'hello world'
+        }
+      },
+      mounted() {
+        window.increase = () => {
+          this.count++
+        }
+        window.update = () => {
+          this.msg = 'hello vue'
+        }
+      },
+      render() {
+        return {
+          type: 'div',
+          children: [{
+            type: 'h1',
+            children: `我是父组件-${this.count}`,
+          }, {
+            type: Child,
+            props: {
+              title: this.msg,
+              name: 'vnode-props'
+            }
+          }]
+        }
+      }
+    }
+
+    const vnode = {
+      type: Parent,
+    }
+
+    render(vnode, document.querySelector('#app'))
+  </script>
+</body>
+
+</html>

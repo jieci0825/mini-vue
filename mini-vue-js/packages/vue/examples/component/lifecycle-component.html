@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Document</title>
+</head>
+
+<body>
+  <div id="app"></div>
+
+  <script src="../../dist/mini-vue.js"></script>
+  <script>
+    const { render } = MiniVue
+
+    const MyComp = {
+      data() {
+        return {
+          msg: '大河之剑天上来'
+        }
+      },
+      beforeCreate() {
+        console.log('beforeCreate')
+      },
+      created() {
+        console.log('created')
+      },
+      beforeMount() {
+        console.log('beforeMount')
+      },
+      mounted() {
+        console.log('mounted')
+        setTimeout(() => {
+          this.msg = '少年郎'
+        }, 2000)
+      },
+      beforeUpdate() {
+        console.log('beforeUpdate')
+      },
+      updated() {
+        console.log('updated')
+      },
+      render(state) {
+        return {
+          type: 'div',
+          children: `count is: ${this.title}` // 访问 props 数据
+        }
+      }
+    }
+
+    const vnode = {
+      type: MyComp,
+    }
+
+    render(vnode, document.querySelector('#app'))
+  </script>
+</body>
+
+</html>

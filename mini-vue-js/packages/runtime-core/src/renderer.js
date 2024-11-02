@@ -1,6 +1,28 @@
-import { EMPTY_OBJ, isArray, isObject, isString } from '@vue/shared'
+import {
+  EMPTY_OBJ,
+  hasChanged,
+  isArray,
+  isFunction,
+  isObject,
+  isOn,
+  isString
+} from '@vue/shared'
 import { normalizeClass } from './normalizeProp'
 import { Fragment, isSameVNodeType, Text } from './vnode'
+import {
+  effect,
+  reactive,
+  shallowReactive,
+  shallowReadonly
+} from '@vue/reactivity'
+import { queuePreFlushCbs } from './scheduler'
+import {
+  createComponentInstance,
+  createRenderContext,
+  emit,
+  resolveProps
+} from './component'
+import { setCurrentInstance } from './apiLifecycle'
 
 export function createRenderer(options) {
   return baseCreateRenderer(options)
@@ -29,21 +51,20 @@ function baseCreateRenderer(options) {
       if (!n1) {
         mountElement(n2, container, anchor)
       } else {
-        patchElement(n1, n2)
+        patchElement(n1, n2, anchor)
       }
-    }
-    // 处理文本节点
-    else if (type === Text) {
+    } else if (type === Text) {
+      // 处理文本节点
       if (!n1) {
         mountText(n2, container, anchor)
       } else {
-        patchText(n1, n2)
+        patchText(n1, n2, anchor)
       }
     } else if (type === Comment) {
       if (!n1) {
         mountComment(n2, container, anchor)
       } else {
-        patchComment(n1, n2)
+        patchComment(n1, n2, anchor)
       }
     } else if (type === Fragment) {
       if (!n1) {
@@ -51,13 +72,144 @@ function baseCreateRenderer(options) {
       } else {
         patchFragment(n1, n2, container)
       }
-    }
-    // 如果是对象表示是组件
-    else if (isObject(type)) {
-      // todo 处理组件
+    } else if (isObject(type)) {
+      if (!n1) {
+        mountComponent(n2, container, anchor)
+      } else {
+        patchComponent(n1, n2, anchor)
+      }
     } else {
       // TODO 处理其他情况
     }
+  }
+
+  function patchComponent(n1, n2, anchor) {
+    // 获取组件实例，即 n1.component，同时让新的组件虚拟节点 n2.component 也指向组件实例
+    const instance = (n2.component = n1.component)
+    // 获取当前的 props 数据
+    const { props } = instance
+    // 调用 hasPropsChanged 检测为子组件传递的 props 是否发生变化，如果没有变化，则不需要更新
+    if (hasPropsChanged(n1.props, n2.props)) {
+      // 调用 resolveProps 函数重新获取 props 数据
+      const [nextProps] = resolveProps(n2.type.props, n2.props)
+      // 更新 props
+      for (const k in nextProps) {
+        props[k] = nextProps[k]
+      }
+      // 删除不存在的 props
+      for (const k in props) {
+        if (!(k in nextProps)) {
+          delete props[k]
+        }
+      }
+    }
+  }
+
+  function hasPropsChanged(prevProps, nextProps) {
+    const nextKeys = Object.keys(nextProps)
+    // 如果新旧 props 的数量变了，则说明有变化
+    if (nextKeys.length !== Object.keys(prevProps).length) {
+      return true
+    }
+
+    // 如果新旧 props 的数量一样，则逐个对比 props 的值
+    for (let i = 0; i < nextKeys.length; i++) {
+      const key = nextKeys[i]
+      // 有不相等的 props，则说明有变化，即比较两个值是否存在变化
+      if (hasChanged(nextProps[key], prevProps[key])) return true
+    }
+    return false
+  }
+
+  function mountComponent(vnode, container, anchor) {
+    // 获取组件配置对象
+    const componentOptions = vnode.type
+
+    const {
+      setup,
+      render,
+      data,
+      props: propsOption,
+      beforeCreate,
+      created,
+      beforeMount,
+      mounted,
+      beforeUpdate,
+      updated
+    } = componentOptions
+
+    beforeCreate && beforeCreate()
+
+    const instance = (vnode.component = createComponentInstance(vnode))
+
+    // 解析 props 和 attrs
+    const [props, attrs] = resolveProps(propsOption, vnode.props)
+    instance.props = shallowReactive(props)
+
+    // 当组件状态-即初始化 data
+    const state = reactive(data ? data() : {})
+    instance.state = state
+
+    // 渲染下上文
+    const renderContext = createRenderContext(instance)
+
+    // 处理插槽
+    const slots = vnode.children || {}
+    instance.slots = slots
+
+    // 获取 setup 函数的上下文
+    const setupContext = { attrs, emit, slots }
+
+    // 在调用 setup 函数之前，设置当前组件实例
+    setCurrentInstance(instance)
+    // 执行 setup 函数，并获取其返回值
+    const setupResult = setup(shallowReadonly(instance.props), setupContext)
+    // 在 setup 函数执行完毕之后，重置当前组件实例
+    setCurrentInstance(null)
+
+    let setupState = null
+    // 根据 setup 函数的返回值，处理 render 函数的调用
+    if (isFunction(setupResult)) {
+      if (render) console.error('setup 函数返回渲染函数，render 选项将被忽略')
+      render = setupResult
+    } else {
+      setupState = setupResult
+    }
+
+    instance.setupState = setupState
+
+    created && created.call(renderContext)
+
+    effect(
+      () => {
+        const subTree = render.call(renderContext, renderContext)
+        if (instance.isMounted) {
+          beforeUpdate && beforeUpdate.call(renderContext)
+
+          patch(instance.subTree, subTree, container, anchor)
+
+          updated && updated.call(renderContext)
+        } else {
+          beforeMount && beforeMount.call(renderContext)
+
+          patch(null, subTree, container, anchor)
+          instance.isMounted = true
+
+          mounted && mounted.call(renderContext)
+          instance.mounted &&
+            instance.mounted.forEach(hook => hook.call(renderContext))
+        }
+
+        instance.subTree = subTree
+      },
+      {
+        scheduler: ect => {
+          // 将组件状态导致的更新放入微队列中，等待同步任务执行完毕后执行
+          //  - 将多次状态改变导致的更新合并为一次更新
+          queuePreFlushCbs(ect.fn)
+        }
+      }
+    )
   }
 
   function mountFragment(vnode, container) {
@@ -73,10 +225,10 @@ function baseCreateRenderer(options) {
     patchChildren(n1, n2, container)
   }
 
-  function patchComment(n1, n2) {
+  function patchComment(n1, n2, anchor) {
     const el = (n2.el = n1.el)
     if (n2.children !== n1.children) {
-      hostSetText(el, n2.children)
+      hostSetText(el, n2.children, anchor)
     }
   }
 
@@ -85,7 +237,7 @@ function baseCreateRenderer(options) {
     hostInsert(el, container)
   }
 
-  function patchText(n1, n2) {
+  function patchText(n1, n2, anchor) {
     const el = (n2.el = n1.el)
     if (n2.children !== n1.children) {
       hostSetText(el, n2.children, anchor)
@@ -123,7 +275,7 @@ function baseCreateRenderer(options) {
     } else if (isArray(vnode.children)) {
       // 如果是一个数组的话，需要循环调用patch
       vnode.children.forEach(child => {
-        patch(null, child, el)
+        patch(null, child, el, anchor)
       })
     }
 
@@ -141,7 +293,7 @@ function baseCreateRenderer(options) {
     hostInsert(el, container, anchor)
   }
 
-  function patchElement(n1, n2) {
+  function patchElement(n1, n2, anchor) {
     // 将旧vnode上的 el 赋值给 新vnode的 el 属性，实现 dom 元素复用
     const el = (n2.el = n1.el)
     const oldProps = n1.props || EMPTY_OBJ
@@ -166,10 +318,10 @@ function baseCreateRenderer(options) {
       }
     }
 
-    patchChildren(n1, n2, el)
+    patchChildren(n1, n2, el, anchor)
   }
 
-  function patchChildren(n1, n2, container) {
+  function patchChildren(n1, n2, container, anchor) {
     // 判断新vnode的 children 是否是文本节点
     if (isString(n2.children)) {
       // 旧节点有三种情况：文本节点、数组、空

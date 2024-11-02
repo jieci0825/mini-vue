@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Document</title>
+</head>
+
+<body>
+  <div id="app"></div>
+
+
+
+  <script src="../../dist/mini-vue.js"></script>
+  <script>
+    const { render, ref } = MiniVue
+
+    const Child = {
+      setup(props, context) {
+        const handleIncrease = () => {
+          context.emit('increase', 2);
+        }
+        const handleDecrease = () => {
+          context.emit('decrease', 2);
+        }
+
+        return {
+          handleIncrease,
+          handleDecrease
+        }
+      },
+      render() {
+        return {
+          type: 'div',
+          children: [
+            {
+              type: 'button',
+              children: '增加',
+              props: {
+                onClick: this.handleIncrease
+              }
+            },
+            {
+              type: 'button',
+              children: '减少',
+              props: {
+                onClick: this.handleDecrease
+              }
+            }
+          ]
+        }
+      }
+    }
+
+    const Parent = {
+      setup(props, context) {
+        const count = ref(0)
+
+        const increase = window.increase = (val) => {
+          console.log('val', val)
+          count.value += val || 1
+        }
+
+        const decrease = window.decrease = (val) => {
+          count.value -= val || 1
+        }
+
+        return {
+          count,
+          increase,
+          decrease
+        }
+      },
+
+      render() {
+        return {
+          type: 'div',
+          children: [
+            {
+              type: 'h1',
+              children: this.msg
+            },
+            {
+              type: 'p',
+              children: '计数：' + this.count.value
+            },
+            {
+              type: Child,
+              props: {
+                onIncrease: this.increase,
+                onDecrease: this.decrease
+              }
+            }
+          ]
+        }
+      }
+    }
+
+    const vnode = {
+      type: Parent,
+    }
+
+    render(vnode, document.querySelector('#app'))
+  </script>
+</body>
+
+</html>
