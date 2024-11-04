@@ -129,7 +129,7 @@ export function defineAsyncComponent(options) {
               options.onError(retry, fail, retries)
             })
           } else {
-            throw error
+            throw err
           }
         })
     )

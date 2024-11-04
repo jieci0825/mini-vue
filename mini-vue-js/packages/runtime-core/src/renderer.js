@@ -72,7 +72,9 @@ function baseCreateRenderer(options) {
       } else {
         patchFragment(n1, n2, container)
       }
-    } else if (isObject(type)) {
+    }
+    // 适配状态组件和函数函数式组件
+    else if (isObject(type) || isFunction(type)) {
       if (!n1) {
         mountComponent(n2, container, anchor)
       } else {
@@ -122,8 +124,27 @@ function baseCreateRenderer(options) {
   }
 
   function mountComponent(vnode, container, anchor) {
-    // 获取组件配置对象
-    const componentOptions = vnode.type
+    let componentOptions = vnode.type
+
+    // 检查是否是函数式组件
+    /**
+     * @example
+     * function MyFunctionalComponent(props) {
+     *   return { type: 'div', children: props.title }
+     * }
+     * MyFunctionalComponent.props = { title: String }
+     *
+     * const vnode = {
+     *    type: MyFunctionalComponent
+     * }
+     */
+    if (isFunction(vnode.type)) {
+      // 如果是函数是组件，则将 vnode.type 作为 render 函数
+      componentOptions = {
+        render: vnode.type,
+        props: vnode.type.props
+      }
+    }
 
     const {
       setup,
@@ -140,6 +161,7 @@ function baseCreateRenderer(options) {
 
     beforeCreate && beforeCreate()
 
+    // 创建组件实例
     const instance = (vnode.component = createComponentInstance(vnode))
 
     // 解析 props 和 attrs
@@ -163,7 +185,8 @@ function baseCreateRenderer(options) {
     // 在调用 setup 函数之前，设置当前组件实例
     setCurrentInstance(instance)
     // 执行 setup 函数，并获取其返回值
-    const setupResult = setup(shallowReadonly(instance.props), setupContext)
+    const setupResult =
+      setup && setup(shallowReadonly(instance.props), setupContext)
     // 在 setup 函数执行完毕之后，重置当前组件实例
     setCurrentInstance(null)
 
