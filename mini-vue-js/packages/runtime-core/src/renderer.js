@@ -258,6 +258,10 @@ function baseCreateRenderer(options) {
         unmount(child)
       })
       return
+    } else if (isObject(vnode.type)) {
+      // 对于组件的卸载，本质上是要卸载组件所渲染的内容，即 subTree
+      unmount(vnode.component.subTree)
+      return
     }
 
     const { el } = vnode
