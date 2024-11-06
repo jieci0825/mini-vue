@@ -13,3 +13,5 @@ export {
   shallowReadonly
 } from '@vue/reactivity'
 export * from '@vue/shared'
+// * 暂定
+export { compile } from '@vue/compiler-dom'
