@@ -71,6 +71,7 @@ export function baseParse(content) {
 
   // 调用 parseChildren 函数开始进行解析，它返回解析后得到的子节点
   const nodes = parseChildren(context, [])
+  console.log(nodes)
   // 创建根节点，将子节点添加到根节点中
   return createRoot(nodes)
 
@@ -268,8 +269,10 @@ function parseChildren(context, ancestors) {
         } else if (source[1] === '/') {
           // 结束标签-抛出错误
           // 状态机遭遇了闭合标签，此时应该抛出错误，因为它缺少与之对应的开始标签
+          //  - 因为经过 isEnd 的判断之后，当前符合一个闭合标签的格式，但是没有找到与之对应的开始标签
+          //  - 所以，这里需要抛出错误，例如：<div><span></div></span>，这里的 </span> 就无法找到对应的 <span>
           console.error('无效的结束标签')
-          continue
+          break
         } else if (/[a-z]/i.test(source[1])) {
           // 标签
           node = parseElement(context, ancestors)
@@ -290,6 +293,59 @@ function parseChildren(context, ancestors) {
   }
 
   return nodes
+}
+
+function parseComment(context) {
+  // 消费注释的开始部分
+  context.advanceBy('<!--'.length)
+  // 找到注释结束部分的位置索引
+  let closeIndex = context.source.indexOf('-->')
+  // 截取注释节点的内容
+  const content = context.source.slice(0, closeIndex)
+  // 消费内容
+  context.advanceBy(content.length)
+  // 消费注释的结束部分
+  context.advanceBy('-->'.length)
+  // 返回类型为 Comment 的节点
+  return {
+    type: NodeTypes.COMMENT,
+    content
+  }
+}
+
+function parseInterpolation(context) {
+  const { advanceBy, advanceSpaces } = context
+
+  advanceSpaces()
+
+  const [open, close] = ['{{', '}}']
+
+  // 消费开始定界符
+  advanceBy(open.length)
+  // 找到结束定界符的位置索引
+  const closeIndex = context.source.indexOf(close, 1)
+  if (closeIndex < 0) {
+    console.error('插值缺少结束定界符')
+  }
+  // 截取开始定界符与结束定界符之间的内容作为插值表达式
+  const content = context.source.slice(0, closeIndex)
+  // 消费表达式的内容
+  advanceBy(content.length)
+  // 消费结束定界符
+  advanceBy(close.length)
+
+  advanceSpaces()
+
+  return {
+    type: NodeTypes.INTERPOLATION,
+    // 插值节点的 content 是一个类型为 Expression 的表达式节点
+    content: {
+      type: NodeTypes.SIMPLE_EXPRESSION,
+      isStatic: false,
+      // todo 表达式节点的内容需要经过 decodeHtml 处理
+      content
+    }
+  }
 }
 
 function parseText(context) {
@@ -322,6 +378,7 @@ function parseText(context) {
 
   return {
     type: NodeTypes.TEXT,
+    // todo 解码命名字符引用 decodeHtml
     content
   }
 }
@@ -358,8 +415,9 @@ function parseElement(context, ancestors) {
     parseTag(context, TagTypes.END)
   } else {
     console.error(`缺少结束标签：${element.tag}`)
+    // 返回一个 null 当前标签是无效的，所以返回 null，不需要加入到 tree 中
+    return null
   }
-
   return element
 }
 

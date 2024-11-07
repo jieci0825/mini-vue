@@ -36,8 +36,6 @@ export function generate(ast) {
   // 调用 genNode 函数完成代码生成的工作
   genNode(ast, context)
 
-  console.log(context.code)
-
   // 返回渲染函数代码
   return context.code
 }

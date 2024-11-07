@@ -18,8 +18,22 @@
         <p>Template</p>
       </div>`
 
+    // 无效的结束标签
+    const template1 = `<div><span></div></span> `
+
+    // 属性
+    const template2 = `<div id="foo" @click="handler" v-show="display"></div>`
+
+    // 非法的内容  <div>A<B</div> 
+
+    // todo 插值
+    const template3 = `<div>foo {{ bar }} baz</div></div>`
+
+    // todo 注释
+    const template4 = `<div><!-- 我是一段注释 --></div>`
+
     const result = compile(template)
-    // console.log('result:', result)
+    console.log('result:', result)
   </script>
 </body>
 

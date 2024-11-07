@@ -13,6 +13,7 @@ export function baseCompile(template, options = {}) {
   transform(
     ast,
     extend(options, {
+      // todo 待补充插值、注释、指令等的转换
       nodeTransforms: [transformElement, transformText, transformRoot]
     })
   )

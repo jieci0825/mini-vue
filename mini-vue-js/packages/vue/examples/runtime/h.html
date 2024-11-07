@@ -8,14 +8,14 @@
 </head>
 
 <body>
+  <div id="app"></div>
+
   <script src="../../dist/mini-vue.js"></script>
   <script>
-    const { compile } = MiniVue
+    const { h } = MiniVue
 
-    const template = `<div id="foo" v-show="display">我是一个div</div>`
-
-    const result = compile(template)
-    console.log('result:', result)
+    const vnode = h('div', { 'class': 'red' }, [])
+    console.log(vnode)
   </script>
 </body>
 
