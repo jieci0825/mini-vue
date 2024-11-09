@@ -398,7 +398,16 @@ function baseCreateRenderer(
         // 获取旧节点的 shapeFlag
         const prevShapeFlag = oldVNode ? oldVNode.shapeFlag : 0
         //获取新节点的 children
-        const c2 = newVNode && newVNode.children
+        let c2: any = newVNode && newVNode.children
+        if (c2) {
+            // 处理 Cannot assign to read only property '0' of string 'xxx'
+            if (isString(c2)) {
+                c2 = c2.split('').map((item) => normalizeVNode(item))
+            }
+            for (let i = 0; i < c2.length; i++) {
+                c2[i] = normalizeVNode(c2[i])
+            }
+        }
         const { shapeFlag } = newVNode
 
         // 进行不同状态的判断
@@ -468,7 +477,7 @@ function baseCreateRenderer(
         // 根据最小长度来进行遍历公共节点部分。进行 patch
         for (let i = 0; i < minLen; i++) {
             const oldVNode = c1[i]
-            const newVNode = normalizeVNode(c2[i])
+            const newVNode = c2[i]
             patch(oldVNode, newVNode, container, anchor)
         }
 

@@ -12,7 +12,7 @@
 
   <script src="../../dist/mini-vue.js"></script>
   <script>
-    const { h, render, ref } = MiniVue
+    const { h, render, ref, Fragment } = MiniVue
 
     const comp1 = {
       setup() {
@@ -46,7 +46,7 @@
         a: Number
       },
       render() {
-        return h('h3', this.flag ? '曼波' : '阿米诺斯')
+        return h('h3', [this.flag ? '曼波' : '阿米诺斯'])
       }
     }
 
@@ -61,26 +61,37 @@
         title: String,
         a: Number,
       },
+
       render() {
-        return h('div', {
+        return h(Fragment, {
           style: this.$attrs.style
         }, [
-          h('h2', `组件的props：${this.title}`),
-          h('h3', `组件的 setup：${this.msg}`),
-          h('button', {
-            onClick: (e) => {
-              this.flag = !this.flag
-            }
-          }, `切换渲染`),
+          // h('h2', `组件的props：${this.title}`),
+          // h('h3', `组件的 setup：${this.msg}`),
+          // h('button', {
+          //   onClick: (e) => {
+          //     this.flag = !this.flag
+          //   }
+          // }, `切换渲染`),
           h(comp3, {
             flag: this.flag,
-            name: 'abc'
+            name: 'abc',
+            a: 1111
           })
         ])
       },
       setup(props) {
         const msg = ref('这是 setup')
         const flag = ref(false)
+
+        let count = 0
+
+        setInterval(() => {
+          if (count >= 2) return
+          count++
+          console.log(`********第${count}次********`)
+          flag.value = !flag.value
+        }, 2000)
 
         return {
           msg,
@@ -92,8 +103,6 @@
     const vnode = h(comp, {
       title: '大河之剑天上来',
       style: { color: '#666' },
-      a: 1,
-      b: 2
     })
 
 
