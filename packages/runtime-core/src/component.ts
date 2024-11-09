@@ -21,6 +21,8 @@ export interface ComponentInstance {
     [LifecycleHooks.MOUNTED]: any
     props: any
     attrs: any
+    emits: any
+    slots: any
     propsOptions: any
     proxy: any // 渲染上下文
     setupState: any // setup 函数返回值
@@ -59,6 +61,8 @@ export function createComponentInstance(vnode: VNode): ComponentInstance {
         [LifecycleHooks.MOUNTED]: null,
         props: {},
         attrs: {},
+        emits: {},
+        slots: {},
         propsOptions: {},
         proxy: null, // 渲染上下文
         setupState: null // setup 函数返回值
@@ -80,7 +84,24 @@ export function setupComponent(instance: ComponentInstance) {
     initProps(instance, propsOptions)
 
     // 获取 setup 函数的上下文
-    const setupContext = { attrs: instance.attrs, emit: {}, slots: {} }
+    const setupContext = {
+        attrs: instance.attrs,
+        // emit 本质就是发布与订阅，在 vnode.props 中注册事件，在 emit 中触发事件
+        emit(event, ...payload) {
+            const eventName = `on${event[0].toUpperCase() + event.slice(1)}`
+            const handler = instance.vnode.props[eventName]
+            if (handler) {
+                handler(...payload)
+            } else {
+                console.warn(`Event "${event}" is not defined.`)
+            }
+        },
+        // 插槽实际就是 children
+        slots: instance.vnode.children
+    }
+
+    instance.emits = setupContext.emit
+    instance.slots = setupContext.slots
 
     // 如果存在 setup 函数，则表示认为是 composition api
     if (isFunction(setup)) {
@@ -139,7 +160,9 @@ function applyOptions(instance: ComponentInstance) {
     } = instance.type
 
     const publickProxyMap = {
-        $attrs: (i: ComponentInstance) => i.attrs
+        $attrs: (i: ComponentInstance) => i.attrs,
+        $emits: (i: ComponentInstance) => i.emits,
+        $slots: (i: ComponentInstance) => i.slots
     }
 
     const renderContext = createRenderContext(instance, publickProxyMap)

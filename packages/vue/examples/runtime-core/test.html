@@ -51,6 +51,17 @@
     }
 
 
+    const comp4 = {
+      render() {
+        return h(Fragment, [
+          h('h2', { style: { color: 'gray' } }, 'slot 演示'),
+          h('div', null, this.$slots.header()),
+          h('div', null, this.$slots.default()),
+          h('div', null, this.$slots.footer()),
+        ])
+      }
+    }
+
     const comp = {
       data() {
         return {
@@ -63,46 +74,56 @@
       },
 
       render() {
-        return h(Fragment, {
+        return h('div', {
           style: this.$attrs.style
         }, [
-          // h('h2', `组件的props：${this.title}`),
-          // h('h3', `组件的 setup：${this.msg}`),
-          // h('button', {
-          //   onClick: (e) => {
-          //     this.flag = !this.flag
-          //   }
-          // }, `切换渲染`),
+          h('h2', `组件的props：${this.title}`),
+          h('h3', `组件的 setup：${this.msg}`),
+          h('button', {
+            onClick: (e) => {
+              this.flag = !this.flag
+            }
+          }, `切换渲染`),
           h(comp3, {
             flag: this.flag,
             name: 'abc',
             a: 1111
+          }),
+          h('button', {
+            onClick: this.hendleEmit
+          }, `触发自定义事件`),
+          h(comp4, null, {
+            header: () => h('h2', '头部插槽'),
+            default: () => h('h3', '默认插槽'),
+            footer: () => h('h2', '底部插槽'),
           })
         ])
       },
-      setup(props) {
+      setup(props, { emit }) {
         const msg = ref('这是 setup')
         const flag = ref(false)
 
-        let count = 0
-
-        setInterval(() => {
-          if (count >= 2) return
-          count++
-          console.log(`********第${count}次********`)
-          flag.value = !flag.value
-        }, 2000)
+        const hendleEmit = () => {
+          emit('handleClick', { name: 'zs' })
+        }
 
         return {
           msg,
-          flag
+          flag,
+          hendleEmit
         }
       }
     }
 
     const vnode = h(comp, {
       title: '大河之剑天上来',
-      style: { color: '#666' },
+      style: {
+        color: '#666',
+
+      },
+      onHandleClick: (payload) => {
+        console.log('自定义事件触发', payload)
+      }
     })
 
 

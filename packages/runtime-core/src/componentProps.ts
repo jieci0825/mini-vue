@@ -1,7 +1,6 @@
 import { hasChanged, hasOwn, isOn, startsWith } from '@vue/shared'
 import { reactive } from '@vue/reactivity'
 import type { ComponentInstance } from './component'
-import { VNode } from './vnode'
 
 export function initProps(instance: ComponentInstance, compProps: any) {
     // 获取生成 vnode 时传入的 props
@@ -14,6 +13,7 @@ export function initProps(instance: ComponentInstance, compProps: any) {
     for (const key in options) {
         const value = options[key]
         if (compProps && hasOwn(compProps, key)) {
+            // 如果是 on 开头的属性，这个表示自定义事件，也将其赋值给 props
             props[key] = value
         } else {
             attrs[key] = value
