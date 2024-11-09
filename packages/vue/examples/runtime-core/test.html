@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Document</title>
+</head>
+
+<body>
+  <div id="app"></div>
+
+  <script src="../../dist/mini-vue.js"></script>
+  <script>
+    const { h, render, ref } = MiniVue
+
+    const comp1 = {
+      setup() {
+        const msg = ref('这是 comp1')
+
+        return {
+          msg
+        }
+      },
+      render() {
+        return h('p', { style: { color: 'red' } }, this.msg)
+      }
+    }
+
+    const comp2 = {
+      setup() {
+        const msg = ref('这是 comp2')
+
+        return {
+          msg
+        }
+      },
+      render() {
+        return h('p', { style: { color: 'blue' } }, this.msg)
+      }
+    }
+
+    const comp3 = {
+      props: {
+        flag: Boolean,
+        a: Number
+      },
+      render() {
+        return h('h3', this.flag ? '曼波' : '阿米诺斯')
+      }
+    }
+
+
+    const comp = {
+      data() {
+        return {
+          age: 10,
+        }
+      },
+      props: {
+        title: String,
+        a: Number,
+      },
+      render() {
+        return h('div', {
+          style: this.$attrs.style
+        }, [
+          h('h2', `组件的props：${this.title}`),
+          h('h3', `组件的 setup：${this.msg}`),
+          h('button', {
+            onClick: (e) => {
+              this.flag = !this.flag
+            }
+          }, `切换渲染`),
+          h(comp3, {
+            flag: this.flag,
+            name: 'abc'
+          })
+        ])
+      },
+      setup(props) {
+        const msg = ref('这是 setup')
+        const flag = ref(false)
+
+        return {
+          msg,
+          flag
+        }
+      }
+    }
+
+    const vnode = h(comp, {
+      title: '大河之剑天上来',
+      style: { color: '#666' },
+      a: 1,
+      b: 2
+    })
+
+
+    render(vnode, document.querySelector('#app'))
+  </script>
+</body>
+
+</html>

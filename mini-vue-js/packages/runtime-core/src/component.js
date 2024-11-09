@@ -70,7 +70,7 @@ export function createRenderContext(instance) {
           state[key] = value
         }
       } else if (key in props) {
-        console.warn(`Attempting to mutate prop "${k}". Props are readonly.`)
+        console.warn(`Attempting to mutate prop "${key}". Props are readonly.`)
       } else if (instance.setupState && key in instance.setupState) {
         // 渲染上下文增加对 setupState 的支持
         instance.setupState[key] = value

@@ -45,7 +45,12 @@ export function createVNode(type: any, props: any, children: any): VNode {
 
 export { createVNode as createElementVNode }
 
-function createBaseVNode(type: any, props: any, children: any, shapeFlag: number): VNode {
+function createBaseVNode(
+    type: any,
+    props: any,
+    children: any,
+    shapeFlag: number
+): VNode {
     const vnode: VNode = {
         [IsVNode]: true,
         type,

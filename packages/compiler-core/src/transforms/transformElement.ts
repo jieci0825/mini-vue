@@ -13,6 +13,11 @@ export function transformElement(node, context: TransformContext) {
         let vnodeChildren = node.children
 
         // * 核心处理就在于此，生成 codegenNode 属性
-        node.codegenNode = createVNodeCall(context, vnodeTag, vnodeProps, vnodeChildren)
+        node.codegenNode = createVNodeCall(
+            context,
+            vnodeTag,
+            vnodeProps,
+            vnodeChildren
+        )
     }
 }

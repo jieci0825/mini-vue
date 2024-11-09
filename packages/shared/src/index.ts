@@ -31,11 +31,22 @@ export const isEqual = (value1: any, value2: any) => {
 
 export const extend: typeof Object.assign = Object.assign
 
+const hasOwnProperty = Object.prototype.hasOwnProperty
+
+export const hasOwn = (
+    value: object,
+    key: string | symbol
+): key is keyof typeof value => {
+    return hasOwnProperty.call(value, key)
+}
+
 export const EMPTY_OBJ: { readonly [key: string]: any } = {}
 export const EMPTY_ARR: readonly never[] = []
 
 export function hasKey(value): boolean {
-    return value !== null && value !== undefined && !isString(value) && !!value.key
+    return (
+        value !== null && value !== undefined && !isString(value) && !!value.key
+    )
 }
 
 /**

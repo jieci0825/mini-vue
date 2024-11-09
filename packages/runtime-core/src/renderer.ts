@@ -1,10 +1,21 @@
 import { ShapeFlags } from 'packages/shared/src/shapFlags'
 import { Comment, Fragment, isSameVNodeType, Text, VNode } from './vnode'
-import { EMPTY_ARR, EMPTY_OBJ, isFunction, isString } from '@vue/shared'
-import { type ComponentInstance, createComponentInstance, setupComponent } from './component'
+import {
+    EMPTY_ARR,
+    EMPTY_OBJ,
+    hasChanged,
+    isFunction,
+    isString
+} from '@vue/shared'
+import {
+    type ComponentInstance,
+    createComponentInstance,
+    setupComponent
+} from './component'
 import { ReactiveEffect } from 'packages/reactivity/src/effect'
 import { queuePreFlushCbs } from './scheduler'
 import { normalizeVNode, renderComponentRoot } from './componentRenderUtils'
+import { hasPropsChanged, updateProps } from './componentProps'
 
 export interface CustomElement extends Element {
     _vnode?: VNode
@@ -14,7 +25,12 @@ export interface RendererOptions {
     /**
      * 为指定的 el 的属性打补丁
      */
-    patchProp(el: CustomElement, key: string, prevValue: any, nextValue: any): void
+    patchProp(
+        el: CustomElement,
+        key: string,
+        prevValue: any,
+        nextValue: any
+    ): void
     /**
      * 未指定的 element 设置 text
      */
@@ -56,7 +72,9 @@ interface baseCreateRendererReturn {
     render: (vnode: VNode, container: CustomElement) => void
 }
 
-function baseCreateRenderer(options: RendererOptions): baseCreateRendererReturn {
+function baseCreateRenderer(
+    options: RendererOptions
+): baseCreateRendererReturn {
     const {
         createElement: hostCreateElement,
         createTextNode: hostCreateTextNode,
@@ -105,8 +123,14 @@ function baseCreateRenderer(options: RendererOptions): baseCreateRendererReturn 
     /**
      * 挂载Text
      */
-    function mountTextNode(vnode: VNode, container: CustomElement, anchor?: any) {
-        const textNode = (vnode.el = hostCreateTextNode(vnode.children) as unknown as Element)
+    function mountTextNode(
+        vnode: VNode,
+        container: CustomElement,
+        anchor?: any
+    ) {
+        const textNode = (vnode.el = hostCreateTextNode(
+            vnode.children
+        ) as unknown as Element)
         hostInsert(textNode, container, anchor)
     }
 
@@ -123,18 +147,28 @@ function baseCreateRenderer(options: RendererOptions): baseCreateRendererReturn 
     /**
      * 挂载Comment
      */
-    function mountCommentNode(vnode: VNode, container: CustomElement, anchor?: any) {
-        const commentNode = (vnode.el = hostCreateComment(vnode.children) as unknown as Element)
+    function mountCommentNode(
+        vnode: VNode,
+        container: CustomElement,
+        anchor?: any
+    ) {
+        const commentNode = (vnode.el = hostCreateComment(
+            vnode.children
+        ) as unknown as Element)
         hostInsert(commentNode, container, anchor)
     }
 
     /**
      * 挂载 children
      */
-    function mountChildren(children: VNode[], container: CustomElement, anchor?: any) {
+    function mountChildren(
+        children: VNode[],
+        container: CustomElement,
+        anchor?: any
+    ) {
         // 处理 Cannot assign to read only property '0' of string 'xxx'
         if (isString(children)) {
-            children = children.split('').map(item => normalizeVNode(item))
+            children = children.split('').map((item) => normalizeVNode(item))
         }
         for (let i = 0; i < children.length; i++) {
             const child = (children[i] = normalizeVNode(children[i]))
@@ -145,7 +179,11 @@ function baseCreateRenderer(options: RendererOptions): baseCreateRendererReturn 
     /**
      * 挂载元素
      */
-    function mountElement(vnode: VNode, container: CustomElement, anchor?: any) {
+    function mountElement(
+        vnode: VNode,
+        container: CustomElement,
+        anchor?: any
+    ) {
         const { type, shapeFlag, props } = vnode
 
         // 1、创建元素
@@ -173,8 +211,13 @@ function baseCreateRenderer(options: RendererOptions): baseCreateRendererReturn 
     /**
      * 挂载组件
      */
-    function mountComponent(initialVNode: VNode, container: CustomElement, anchor?: any) {
-        const instance = (initialVNode.component = createComponentInstance(initialVNode))
+    function mountComponent(
+        initialVNode: VNode,
+        container: CustomElement,
+        anchor?: any
+    ) {
+        const instance = (initialVNode.component =
+            createComponentInstance(initialVNode))
 
         // 在 setupComponent 主要进行 render 函数的绑定
         //  - 并且会在里面进行组件实例化和生命周期函数的处理等
@@ -184,21 +227,54 @@ function baseCreateRenderer(options: RendererOptions): baseCreateRendererReturn 
         setupRenderEffect(instance, initialVNode, container, anchor)
     }
 
+    function shouldUpdateComponent(n1: VNode, n2: VNode) {
+        const { props: prevProps, children: prevChildren } = n1
+        const { props: nextProps, children: nextChildren } = n2
+
+        // 插槽就是 Children
+        //  - 只要有插槽，则一定需要更新
+        if (prevChildren || nextChildren) {
+            return true
+        }
+
+        // 检查属性是否一样，如果一样则不需要更新
+        if (prevProps === nextProps) return false
+        // 检测属性是否发生变化，如果发生变化则需要进行更新
+        return hasPropsChanged(prevProps, nextProps)
+    }
+
     /**
      * 更新组件
      */
     function updateComponent(n1: VNode, n2: VNode) {
-        // * 这里的更新属于被动更新，比如父传子，子组件的 props 发生变化，子组件会触发更新
+        // * 被动更新，比如父传子，子组件的 props 发生变化，子组件会触发更新
         // 此时子组件发生的更新就是被动更新
 
         // 在组件初次挂载的时候，会同步给 component 属性也赋值为实例
-        n2.component = n1.component
-        // 这里进行赋值next，表示后续需要被动更新就行了，但是被动更新一定需要吗？
-        //  - 比如父传子的 props 并没有发生变化，此时就不需要进行被动更新
-        //  - TODO：在 Vue 中使用的 shouldUpdateComponent 函数来判断是否要被动更新的，大概就是判断一下属性什么的来决定
-        //  - 这里就不做太精细的操作了
-        n2.component.next = n2
-        n2.component.update()
+        const instance = (n2.component = n1.component)
+
+        // 判断是否需要进行更新，做统一更新入口
+        //  - 被动更新一定需要吗？比如父传子的 props 并没有发生变化，此时就不需要进行被动更新
+        //  - 这里通过这个方法来判断是否需要更新，只要有变化就强制更新
+        if (shouldUpdateComponent(n1, n2)) {
+            // 将新的 vnode 赋值给组件实例的 next 属性
+            n2.component.next = n2
+            // 强制更新
+            n2.component.update()
+        }
+        // updateProps(instance, n1, n2)
+    }
+
+    function updateComponentPreRender(
+        instance: ComponentInstance,
+        next: VNode
+    ) {
+        instance.vnode = next
+        instance.next = null
+
+        // next 即为本次更新的 vnode
+        // instance.props 存在的就是初次挂载时，经过和组件的props合并后的 props，记录的是子组件需要的 props
+        updateProps(instance.props, next.props)
     }
 
     function setupRenderEffect(
@@ -239,11 +315,11 @@ function baseCreateRenderer(options: RendererOptions): baseCreateRendererReturn 
                 initialVNode.el = subTree.el
                 instance.isMounted = true
             } else {
-                let { next, vnode } = instance
-                // 这里的 vnode 是组件上一次挂载时生成的 VNode，这里不需要再重新生成，只需要更新即可
-                //  - 所以 next 直接复用 vnode 即可
-                if (!next) {
-                    next = vnode
+                let { next } = instance
+
+                if (next) {
+                    // 更新前，拿到最新属性来进行更新
+                    updateComponentPreRender(instance, next)
                 }
 
                 // 重新执行组件的 render 函数，得到新的
@@ -256,14 +332,17 @@ function baseCreateRenderer(options: RendererOptions): baseCreateRendererReturn 
                 // 更新
                 patch(prevTree, nextTree, container)
 
-                next.el = nextTree.el
+                instance.vnode.el = nextTree.el
             }
         }
 
         // 使用 effect 来包裹组件的更新函数
-        const effect = (instance.effect = new ReactiveEffect(componentUpdateFn, () => {
-            queuePreFlushCbs(update)
-        }))
+        const effect = (instance.effect = new ReactiveEffect(
+            componentUpdateFn,
+            () => {
+                queuePreFlushCbs(update)
+            }
+        ))
 
         function update() {
             effect.run()
@@ -276,14 +355,19 @@ function baseCreateRenderer(options: RendererOptions): baseCreateRendererReturn 
     /**
      * 处理节点的 prop
      */
-    function patchProps(el: CustomElement, vnode: VNode, oldProps: any, newProps: any) {
+    function patchProps(
+        el: CustomElement,
+        vnode: VNode,
+        oldProps: any,
+        newProps: any
+    ) {
         if (oldProps !== newProps) {
             // 进行新旧的 props 的属性值 对比
             for (const key in newProps) {
                 const next = newProps[key]
                 const prev = oldProps[key]
-                // 如果新旧值不一样，则更新
-                if (next !== prev) {
+                // 如果新旧值发生变化，则更新
+                if (hasChanged(prev, next)) {
                     hostPatchProp(el, key, prev, next)
                 }
             }
@@ -303,7 +387,12 @@ function baseCreateRenderer(options: RendererOptions): baseCreateRendererReturn 
     /**
      * 处理子节点
      */
-    function patchChildren(oldVNode: VNode, newVNode: VNode, container: CustomElement, anchor?: any) {
+    function patchChildren(
+        oldVNode: VNode,
+        newVNode: VNode,
+        container: CustomElement,
+        anchor?: any
+    ) {
         //获取旧节点的 children
         const c1 = oldVNode && oldVNode.children
         // 获取旧节点的 shapeFlag
@@ -364,7 +453,12 @@ function baseCreateRenderer(options: RendererOptions): baseCreateRendererReturn 
     /**
      * 处理虚拟节点没有key时，进行 diff 算法
      */
-    function patchUnkeyedChildren(c1: VNode[], c2: VNode[], container: CustomElement, anchor: any) {
+    function patchUnkeyedChildren(
+        c1: VNode[],
+        c2: VNode[],
+        container: CustomElement,
+        anchor: any
+    ) {
         const oldLen = c1.length
         const newLen = c2.length
 
@@ -393,7 +487,12 @@ function baseCreateRenderer(options: RendererOptions): baseCreateRendererReturn 
     /**
      * 处理虚拟节点有key时，进行 diff 算法
      */
-    function patchKeyChildren(c1: VNode[], c2: VNode[], container: CustomElement, parentAnchor: any) {
+    function patchKeyChildren(
+        c1: VNode[],
+        c2: VNode[],
+        container: CustomElement,
+        parentAnchor: any
+    ) {
         const oldChildren = c1 // 旧子节点数组
         const newChildren = c2 // 新子节点数组
 
@@ -453,7 +552,10 @@ function baseCreateRenderer(options: RendererOptions): baseCreateRendererReturn 
                 // 1. 获取新节点的下一个节点
                 const nextPos = newIndexEnd + 1
                 // 2. 获取新节点的下一个节点的锚点，如果不存在，则使用默认加入到容器末尾(锚点为null即可 parentAnchor = null)
-                const anchor = nextPos < newChildren.length ? newChildren[nextPos].el : parentAnchor
+                const anchor =
+                    nextPos < newChildren.length
+                        ? newChildren[nextPos].el
+                        : parentAnchor
                 while (i <= newIndexEnd) {
                     patch(null, newChildren[i], container, anchor)
                     i++
@@ -546,7 +648,9 @@ function baseCreateRenderer(options: RendererOptions): baseCreateRendererReturn 
             }
 
             // 获取最长递增子序列的索引-(这里的索引是新数组里面的相对下标)
-            const increasingNewIndexSequence = moved ? getSequence(newIndexToOldIndexMap) : EMPTY_ARR
+            const increasingNewIndexSequence = moved
+                ? getSequence(newIndexToOldIndexMap)
+                : EMPTY_ARR
 
             // 如果 increasingNewIndexSequence 返回一个空数组，长度为0，则说明不存在最长递增子序列，所有的节点都是需要移动的
             let lastSequenceIndex = increasingNewIndexSequence.length - 1
@@ -560,7 +664,10 @@ function baseCreateRenderer(options: RendererOptions): baseCreateRendererReturn 
                 // 1. 获取新节点的下一个节点
                 const nextPos = nextChildIndex + 1
                 // 2. 获取新节点的下一个节点的锚点，如果不存在，则使用默认加入到容器末尾(锚点为null即可 parentAnchor = null)
-                const anchor = nextPos < newChildren.length ? newChildren[nextPos].el : parentAnchor
+                const anchor =
+                    nextPos < newChildren.length
+                        ? newChildren[nextPos].el
+                        : parentAnchor
 
                 // 判断节点是否需要进行 mount
                 // - 如果 newIndexToOldIndexMap[i] === 0，则说明这个节点是新增的
@@ -571,7 +678,10 @@ function baseCreateRenderer(options: RendererOptions): baseCreateRendererReturn 
                     // 如果 lastSequenceIndex < 0，则说明不存在最长递增子序列，所有的节点都是需要移动的
                     // 如果 i 不等于 increasingNewIndexSequence[lastSequenceIndex]，则说明这个节点需要移动，i 是相对索引， increasingNewIndexSequence[lastSequenceIndex] 返回的也是一个相对索引
                     // 如果 i 等于 increasingNewIndexSequence[lastSequenceIndex]，则说明这个节点不需要移动，因为它是最长递增子序列的一部分
-                    if (lastSequenceIndex < 0 || i !== increasingNewIndexSequence[lastSequenceIndex]) {
+                    if (
+                        lastSequenceIndex < 0 ||
+                        i !== increasingNewIndexSequence[lastSequenceIndex]
+                    ) {
                         move(nextChild, container, anchor)
                     } else {
                         lastSequenceIndex--
@@ -601,7 +711,12 @@ function baseCreateRenderer(options: RendererOptions): baseCreateRendererReturn 
     /**
      * 处理Text
      */
-    function processText(oldVNode: VNode | null, newVNode: VNode, container: CustomElement, anchor?: any) {
+    function processText(
+        oldVNode: VNode | null,
+        newVNode: VNode,
+        container: CustomElement,
+        anchor?: any
+    ) {
         // 旧节点不存在则直接挂载
         if (oldVNode === null) {
             mountTextNode(newVNode, container, anchor)
@@ -613,7 +728,12 @@ function baseCreateRenderer(options: RendererOptions): baseCreateRendererReturn 
     /**
      * 处理Comment
      */
-    function processComment(oldVNode: VNode | null, newVNode: VNode, container: CustomElement, anchor?: any) {
+    function processComment(
+        oldVNode: VNode | null,
+        newVNode: VNode,
+        container: CustomElement,
+        anchor?: any
+    ) {
         // 旧节点不存在则直接挂载
         if (oldVNode === null) {
             mountCommentNode(newVNode, container, anchor)
@@ -625,7 +745,12 @@ function baseCreateRenderer(options: RendererOptions): baseCreateRendererReturn 
     /**
      * 处理 Fragment
      */
-    function processFragment(oldVNode: VNode | null, newVNode: VNode, container: CustomElement, anchor?: any) {
+    function processFragment(
+        oldVNode: VNode | null,
+        newVNode: VNode,
+        container: CustomElement,
+        anchor?: any
+    ) {
         // 旧节点不存在则直接挂载
         if (oldVNode === null) {
             mountChildren(newVNode.children, container, anchor)
@@ -637,7 +762,12 @@ function baseCreateRenderer(options: RendererOptions): baseCreateRendererReturn 
     /**
      * 处理元素
      */
-    function processElement(oldVNode: VNode | null, newVNode: VNode, container: CustomElement, anchor?: any) {
+    function processElement(
+        oldVNode: VNode | null,
+        newVNode: VNode,
+        container: CustomElement,
+        anchor?: any
+    ) {
         if (oldVNode === null) {
             // 如果 oldVNode 为 null，则表示需要执行挂载操作
             mountElement(newVNode, container, anchor)
@@ -650,7 +780,12 @@ function baseCreateRenderer(options: RendererOptions): baseCreateRendererReturn 
     /**
      * 处理组件
      */
-    function processComponent(oldVNode: VNode | null, newVNode: VNode, container: CustomElement, anchor?: any) {
+    function processComponent(
+        oldVNode: VNode | null,
+        newVNode: VNode,
+        container: CustomElement,
+        anchor?: any
+    ) {
         if (oldVNode === null) {
             // 如果 oldVNode 为 null，则表示需要执行挂载操作
             mountComponent(newVNode, container, anchor)
@@ -666,7 +801,12 @@ function baseCreateRenderer(options: RendererOptions): baseCreateRendererReturn 
      * @param container 容器
      * @param anchor 锚点
      */
-    function patch(oldVNode: VNode | null, newVNode: VNode, container: CustomElement, anchor?: any) {
+    function patch(
+        oldVNode: VNode | null,
+        newVNode: VNode,
+        container: CustomElement,
+        anchor?: any
+    ) {
         if (oldVNode === newVNode) return
 
         // 若旧节点存在，且两个节点类型不一致，则卸载旧节点，在挂载新节点
@@ -838,6 +978,6 @@ function getSequenceValue(arr: number[]): number[] {
         _update(item)
     }
 
-    // 返回这个二维数组的最后一个数组，即最长递增子序列
+    // 返回这个二维数组的最后一个数组，即最长递增子序
     return resultList[resultList.length - 1]
 }
