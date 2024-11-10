@@ -20,7 +20,8 @@
             onMounted,
             onBeforeMount,
             onBeforeUpdate,
-            onUpdated
+            onUpdated,
+            getCurrentInstance
         } = MiniVue
 
         const comp1 = {
@@ -60,6 +61,12 @@
         }
 
         const comp4 = {
+            setup() {
+                onBeforeMount(() => {
+                    const instance = getCurrentInstance()
+                    // console.log('slot-demo-onBeforeMount', instance)
+                })
+            },
             render() {
                 return h(Fragment, [
                     h('h2', { style: { color: 'gray' } }, 'slot 演示'),
@@ -132,23 +139,24 @@
                 }
 
                 onBeforeMount(() => {
-                    console.log('onBeforeMount1')
+                    const instance = getCurrentInstance()
+                    // console.log('onBeforeMount1', instance)
                 })
 
                 onBeforeMount(() => {
-                    console.log('onBeforeMount2')
+                    // console.log('onBeforeMount2')
                 })
 
                 onMounted(() => {
-                    console.log('onMounted')
+                    // console.log('onMounted')
                 })
 
                 onBeforeUpdate(() => {
-                    console.log('onBeforeUpdate')
+                    // console.log('onBeforeUpdate')
                 })
 
                 onUpdated(() => {
-                    console.log('onUpdated')
+                    // console.log('onUpdated')
                 })
 
                 return {

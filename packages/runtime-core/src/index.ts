@@ -16,3 +16,4 @@ export {
 } from './vnode'
 export { createRenderer } from './renderer'
 export type { CustomElement } from './renderer'
+export { getCurrentInstance } from './component'
