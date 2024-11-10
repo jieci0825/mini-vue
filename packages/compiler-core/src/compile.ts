@@ -8,12 +8,13 @@ import { transformIf } from './transforms/vIf'
 
 export function baseCompile(template: string, options = {}) {
     const ast = baseParse(template)
-    transform(
-        ast,
-        extend(options, {
-            nodeTransforms: [transformElement, transformText, transformIf]
-        })
-    )
-    console.log(ast)
-    return generate(ast)
+    console.log('ast:', ast)
+    // transform(
+    //     ast,
+    //     extend(options, {
+    //         nodeTransforms: [transformElement, transformText, transformIf]
+    //     })
+    // )
+    // return generate(ast)
+    return ast
 }

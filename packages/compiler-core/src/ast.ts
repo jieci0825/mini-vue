@@ -4,37 +4,37 @@ import { TransformContext } from './transform'
 
 // 节点类型
 export enum NodeTypes {
-    ROOT,
-    ELEMENT,
-    TEXT,
-    COMMENT,
-    SIMPLE_EXPRESSION,
-    INTERPOLATION,
-    ATTRIBUTE,
-    DIRECTIVE,
+    ROOT, // 根节点
+    ELEMENT, // 元素节点
+    TEXT, // 文本节点
+    COMMENT, // 注释节点
+    SIMPLE_EXPRESSION, // 简单表达式节点
+    INTERPOLATION, // 模板插值节点
+    ATTRIBUTE, // 属性节点
+    DIRECTIVE, // 指令节点
     // containers
-    COMPOUND_EXPRESSION,
-    IF,
-    IF_BRANCH,
-    FOR,
-    TEXT_CALL,
+    COMPOUND_EXPRESSION, // 复合表达式节点 {{a}} abc
+    IF, // if节点
+    IF_BRANCH, // if分支节点
+    FOR, // for节点
+    TEXT_CALL, // 文本调用节点
     // codegen
-    VNODE_CALL,
-    JS_CALL_EXPRESSION,
-    JS_OBJECT_EXPRESSION,
-    JS_PROPERTY,
-    JS_ARRAY_EXPRESSION,
-    JS_FUNCTION_EXPRESSION,
-    JS_CONDITIONAL_EXPRESSION,
-    JS_CACHE_EXPRESSION,
+    VNODE_CALL, // 虚拟节点调用节点
+    JS_CALL_EXPRESSION, // js调用表达式节点
+    JS_OBJECT_EXPRESSION, // js对象表达式节点
+    JS_PROPERTY, // js属性节点
+    JS_ARRAY_EXPRESSION, // js数组表达式节点
+    JS_FUNCTION_EXPRESSION, // js函数表达式节点
+    JS_CONDITIONAL_EXPRESSION, // js条件表达式节点
+    JS_CACHE_EXPRESSION, // js缓存表达式节点
 
     // ssr codegen
-    JS_BLOCK_STATEMENT,
-    JS_TEMPLATE_LITERAL,
-    JS_IF_STATEMENT,
-    JS_ASSIGNMENT_EXPRESSION,
-    JS_SEQUENCE_EXPRESSION,
-    JS_RETURN_STATEMENT
+    JS_BLOCK_STATEMENT, // js块语句节点
+    JS_TEMPLATE_LITERAL, // js模板字符串节点
+    JS_IF_STATEMENT, // js if语句节点
+    JS_ASSIGNMENT_EXPRESSION, // js赋值表达式节点
+    JS_SEQUENCE_EXPRESSION, // js序列表达式节点
+    JS_RETURN_STATEMENT // js返回语句节点
 }
 
 // 元素类型
@@ -79,13 +79,22 @@ export interface SlotNode extends BaseElementNode {
 }
 
 // 元素节点
-export type ElementNode = PlainElementNode | ComponentNode | TemplateNode | SlotNode
+export type ElementNode =
+    | PlainElementNode
+    | ComponentNode
+    | TemplateNode
+    | SlotNode
 
 // 父节点
 export type ParentNode = RootNode | ElementNode
 
 // 模板里面的节点
-export type TemplateChildNode = ElementNode | TextNode | CommentNode | InterpolationNode | CompoundExpressionNode
+export type TemplateChildNode =
+    | ElementNode
+    | TextNode
+    | CommentNode
+    | InterpolationNode
+    | CompoundExpressionNode
 
 // 文本节点
 export interface TextNode extends Node {
@@ -129,13 +138,25 @@ export interface InterpolationNode extends Node {
 // 复合表达式节点
 export interface CompoundExpressionNode extends Node {
     type: NodeTypes.COMPOUND_EXPRESSION
-    children: (SimpleExpressionNode | InterpolationNode | CompoundExpressionNode | TextNode | string | symbol)[]
+    children: (
+        | SimpleExpressionNode
+        | InterpolationNode
+        | CompoundExpressionNode
+        | TextNode
+        | string
+        | symbol
+    )[]
 }
 
 // 表达式
 export type ExpressionNode = SimpleExpressionNode | CompoundExpressionNode
 
-export function createVNodeCall(context: TransformContext, tag: string, props?, children?) {
+export function createVNodeCall(
+    context: TransformContext,
+    tag: string,
+    props?,
+    children?
+) {
     if (context) {
         // 放入一个函数名
         context.helper(CREATE_ELEMENT_VNODE)
@@ -152,7 +173,9 @@ export function createVNodeCall(context: TransformContext, tag: string, props?, 
 /**
  * 创建复合表达式节点
  */
-export function createCompoundExpression(children: CompoundExpressionNode['children']) {
+export function createCompoundExpression(
+    children: CompoundExpressionNode['children']
+) {
     return {
         type: NodeTypes.COMPOUND_EXPRESSION,
         children
@@ -162,7 +185,12 @@ export function createCompoundExpression(children: CompoundExpressionNode['child
 /**
  * 创建条件表达式节点
  */
-export function createConditionalExpression(test, consequent, alternate, newline = true) {
+export function createConditionalExpression(
+    test,
+    consequent,
+    alternate,
+    newline = true
+) {
     return {
         type: NodeTypes.JS_CONDITIONAL_EXPRESSION,
         test,
