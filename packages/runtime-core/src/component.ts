@@ -19,6 +19,8 @@ export interface ComponentInstance {
     [LifecycleHooks.CREATED]: any
     [LifecycleHooks.BEFORE_MOUNT]: any
     [LifecycleHooks.MOUNTED]: any
+    [LifecycleHooks.BEFORE_UPDATE]: any
+    [LifecycleHooks.UPDATED]: any
     props: any
     attrs: any
     emits: any
@@ -30,10 +32,20 @@ export interface ComponentInstance {
 
 // 生命周期
 export const enum LifecycleHooks {
-    BEFORE_CREATE = 'beforeCreate',
-    CREATED = 'created',
-    BEFORE_MOUNT = 'beforeMount',
-    MOUNTED = 'mounted'
+    BEFORE_CREATE = 'bc',
+    CREATED = 'c',
+    BEFORE_MOUNT = 'bm',
+    MOUNTED = 'm',
+    BEFORE_UPDATE = 'bu',
+    UPDATED = 'u'
+}
+
+export let currentInstance: ComponentInstance | null = null
+export function setCurrentInstance(instance: ComponentInstance | null) {
+    currentInstance = instance
+}
+export function getCurrentInstance() {
+    return currentInstance
 }
 
 let uid = 0
@@ -59,6 +71,8 @@ export function createComponentInstance(vnode: VNode): ComponentInstance {
         [LifecycleHooks.CREATED]: null,
         [LifecycleHooks.BEFORE_MOUNT]: null,
         [LifecycleHooks.MOUNTED]: null,
+        [LifecycleHooks.BEFORE_UPDATE]: null,
+        [LifecycleHooks.UPDATED]: null,
         props: {},
         attrs: {},
         emits: {},
@@ -105,10 +119,12 @@ export function setupComponent(instance: ComponentInstance) {
 
     // 如果存在 setup 函数，则表示认为是 composition api
     if (isFunction(setup)) {
+        setCurrentInstance(instance)
         // 传递给 setup 函数的参数
         //  - 参数一： props
         //  - 参数二： setup上下文
         const setupResult = setup(instance.props, setupContext)
+        setCurrentInstance(null)
         // 处理 setup 函数的返回值
         handleSetupResult(instance, setupResult)
     }
@@ -168,7 +184,7 @@ function applyOptions(instance: ComponentInstance) {
     const renderContext = createRenderContext(instance, publickProxyMap)
     instance.proxy = renderContext
 
-    // 初始化
+    // 初始化-适配 options api
     if (beforeCreate) {
         callHook(beforeCreate, instance.proxy)
     }
@@ -192,14 +208,14 @@ function applyOptions(instance: ComponentInstance) {
         callHook(created, instance.proxy)
     }
 
-    function registerLifecycleHooks(register: Function, hook?: Function) {
-        // 如果 hook 存在，则将其 this 绑定到 instance.proxy 上，
-        register(hook?.bind(instance.proxy), instance)
-    }
+    // function registerLifecycleHooks(register: Function, hook?: Function) {
+    //     // 如果 hook 存在，则将其 this 绑定到 instance.proxy 上，
+    //     register(hook?.bind(instance.proxy), instance)
+    // }
 
     // 注册钩子函数
-    registerLifecycleHooks(onBeforeMount, beforeMount)
-    registerLifecycleHooks(onMounted, mounted)
+    // registerLifecycleHooks(onBeforeMount, beforeMount)
+    // registerLifecycleHooks(onMounted, mounted)
 }
 
 function callHook(hook: Function, proxy: any) {

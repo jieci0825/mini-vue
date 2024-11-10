@@ -76,3 +76,10 @@ export const isOn = (value: string): boolean => {
 export const camelToKebab = (str: string): string => {
     return str.replace(/([A-Z])/g, '-$1').toLowerCase()
 }
+
+export const invokeArrayFns = (fns: Function[]): void => {
+    if (!fns) return
+    for (let i = 0; i < fns.length; i++) {
+        fns[i] && fns[i]()
+    }
+}

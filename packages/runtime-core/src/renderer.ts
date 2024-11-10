@@ -4,6 +4,7 @@ import {
     EMPTY_ARR,
     EMPTY_OBJ,
     hasChanged,
+    invokeArrayFns,
     isFunction,
     isString
 } from '@vue/shared'
@@ -288,15 +289,9 @@ function baseCreateRenderer(
             // 为 false 表示初次挂载
             if (!instance.isMounted) {
                 // 从这里将 beforeMount 和 mounted 函数取出进行调用
-                const { beforeMount, mounted } = instance
+                const { bm, m } = instance
 
-                // 在组件被挂载之前调用
-                if (beforeMount) {
-                    // 由于之前这里被我们处理成了数组，所以这里需要调用数组中的每一个函数
-                    for (const fn of beforeMount) {
-                        isFunction(fn) && fn()
-                    }
-                }
+                invokeArrayFns(bm)
 
                 // 得到组件的渲染函数返回的 VNode
                 //  - 这里是组件对象里面的 render 而非是渲染器里面的 render
@@ -305,17 +300,15 @@ function baseCreateRenderer(
                 patch(null, subTree, container, anchor)
 
                 // 在组件被挂载之后调用
-                if (mounted) {
-                    for (const fn of mounted) {
-                        isFunction(fn) && fn()
-                    }
-                }
+                invokeArrayFns(m)
 
                 instance.subTree = subTree
                 initialVNode.el = subTree.el
                 instance.isMounted = true
             } else {
-                let { next } = instance
+                let { next, bu, u } = instance
+
+                invokeArrayFns(bu)
 
                 if (next) {
                     // 更新前，拿到最新属性来进行更新
@@ -333,6 +326,8 @@ function baseCreateRenderer(
                 patch(prevTree, nextTree, container)
 
                 instance.vnode.el = nextTree.el
+
+                invokeArrayFns(u)
             }
         }
 
@@ -400,15 +395,15 @@ function baseCreateRenderer(
         //获取新节点的 children
         let c2: any = newVNode && newVNode.children
         if (c2) {
-            // 处理 Cannot assign to read only property '0' of string 'xxx'
-            if (isString(c2)) {
-                c2 = c2.split('').map((item) => normalizeVNode(item))
-            }
-            for (let i = 0; i < c2.length; i++) {
-                c2[i] = normalizeVNode(c2[i])
+            if (!isString(c2)) {
+                for (let i = 0; i < c2.length; i++) {
+                    c2[i] = normalizeVNode(c2[i])
+                }
             }
         }
         const { shapeFlag } = newVNode
+
+        // debugger
 
         // 进行不同状态的判断
 

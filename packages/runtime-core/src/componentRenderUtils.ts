@@ -1,6 +1,6 @@
 import { ShapeFlags } from 'packages/shared/src/shapFlags'
 import { ComponentInstance } from './component'
-import { isObject } from '@vue/shared'
+import { isNumber, isObject, isString } from '@vue/shared'
 import { createVNode, Text } from './vnode'
 
 export function renderComponentRoot(instance: ComponentInstance) {
@@ -26,11 +26,10 @@ export function renderComponentRoot(instance: ComponentInstance) {
  * 标准化 VNode
  */
 export function normalizeVNode(child) {
-    if (isObject(child)) {
-        return cloneIfMounted(child)
-    } else {
+    if (isString(child) || isNumber(child)) {
         return createVNode(Text, null, String(child))
     }
+    return child
 }
 
 /**
