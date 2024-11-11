@@ -66,7 +66,7 @@ function isEnd(context: ParseContext) {
 export function baseParse(content: string): RootNode {
     const context = createParserContext(content)
 
-    const children = parseChildren(context, [])
+    const children = parseChildren(context)
 
     const root = createRoot(children)
     console.log(root)
@@ -74,7 +74,7 @@ export function baseParse(content: string): RootNode {
     return root
 }
 
-function parseChildren(context: ParseContext, ancestors: Array<any>) {
+function parseChildren(context: ParseContext) {
     let nodes: any = []
     while (!isEnd(context)) {
         const source = context.source
@@ -84,6 +84,8 @@ function parseChildren(context: ParseContext, ancestors: Array<any>) {
         if (startsWith(source, '<')) {
             // 解析标签
             node = parseElement(context)
+            // 本次标签解析完成之后，开始新一轮的解析之前，先吃掉空白部分
+            advanceSpaces(context)
         } else if (startsWith(source, '{{')) {
             // 解析插值
             node = parseInterpolation(context)
@@ -106,7 +108,7 @@ function parseElement(context: ParseContext) {
     if (element.isSelfClosing) return element
 
     // 如果不是自闭合标签，则继续标签内的子元素
-    element.children = parseChildren(context, [])
+    element.children = parseChildren(context)
 
     // 处理当前 element 的结束标签
     if (startsWith(context.source, '</')) {
@@ -134,7 +136,8 @@ function parseTag(context: ParseContext, type: TagType = TagType.Start) {
     // 吃掉中间的空格
     advanceSpaces(context)
 
-    // todo: process attrs
+    // 解析属性
+    const props = type === TagType.Start ? parseAttributes(context) : []
 
     // 检测是否是一个自闭合的标签
     const isSelfClosing = startsWith(context.source, '/>')
@@ -147,7 +150,101 @@ function parseTag(context: ParseContext, type: TagType = TagType.Start) {
         tag: tagName,
         isSelfClosing,
         children: [],
+        props,
         loc: getSelection(context, start)
+    }
+}
+
+function parseAttributes(context: ParseContext) {
+    const props: any[] = []
+
+    // 如果不是以 > 或者 / 开头，则表示还有属性，就要继续循环解析
+    while (
+        context.source.length > 0 &&
+        !(startsWith(context.source, '>') || startsWith(context.source, '/>'))
+    ) {
+        const prop = parseAttribute(context)
+        prop && props.push(prop)
+        // 每处理完成一个属性之后，删除掉空白
+        advanceSpaces(context)
+    }
+
+    return props
+}
+
+function parseAttribute(context: ParseContext) {
+    const start = getCursor(context)
+
+    // 属性名字
+    const match = /^[^\t\r\n\f />][^\t\r\n\f />=]*/.exec(context.source)
+    if (!match) return undefined
+
+    // 获取属性名字
+    const propName = match[0]
+    // 吃掉属性名字
+    advanceBy(context, propName.length)
+
+    // 吃掉可能存在的空格
+    advanceSpaces(context)
+
+    // 检测是否存在等号，如果存在则解析属性值
+    //  - 如果没有则表示属性值是 true
+    const isEqual = startsWith(context.source, '=')
+    isEqual && advanceBy(context, 1)
+
+    // 吃掉可能存在的空格
+    advanceSpaces(context)
+
+    // 属性值
+    let value: any = null
+    // 如果存在等号，则解析属性值
+    if (isEqual) {
+        value = parseAttributeValue(context)
+    }
+
+    const end = getCursor(context)
+
+    return {
+        type: NodeTypes.ATTRIBUTE,
+        name: propName,
+        // 没有属性值则默认为 true
+        value: value || {
+            type: NodeTypes.TEXT,
+            content: true,
+            loc: getSelection(context, start, end)
+        },
+        loc: getSelection(context, start, end)
+    }
+}
+
+function parseAttributeValue(context: ParseContext) {
+    // 确定属性值的引号
+    let quote = context.source[0]
+    if (quote !== '"' && quote !== "'") {
+        console.warn('错误的属性语法')
+        return undefined
+    }
+    // 吃掉引号
+    advanceBy(context, 1)
+    // 获取属性值开始的光标位置
+    const insertStart = getCursor(context)
+    // 获取本次属性值的结束索引
+    const endQuoteIndex = context.source.indexOf(quote)
+    if (endQuoteIndex === -1) {
+        console.warn('属性没有结束引号')
+        return undefined
+    }
+    // 获取属性值
+    const propValue = parseTextData(context, endQuoteIndex)
+    // 获取属性值结束的光标位置
+    const insertEnd = getCursor(context)
+    // 吃掉引号
+    advanceBy(context, 1)
+
+    return {
+        type: NodeTypes.TEXT,
+        content: propValue,
+        loc: getSelection(context, insertStart, insertEnd)
     }
 }
 
