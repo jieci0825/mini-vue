@@ -1,18 +1,5 @@
 import { startsWith } from '@vue/shared'
-import {
-    ElementNode,
-    ElementTypes,
-    NodeTypes,
-    RootNode,
-    TextNode,
-    InterpolationNode
-} from './ast'
-
-export interface CursorPos {
-    line: number
-    column: number
-    offset: number
-}
+import { NodeTypes, RootNode } from './ast'
 
 export interface ParseContext {
     line: number
@@ -20,6 +7,13 @@ export interface ParseContext {
     offset: number
     source: string
     originSource: string
+}
+
+// 光标位置
+export interface CursorPos {
+    line: number
+    column: number
+    offset: number
 }
 
 export const enum TagType {
@@ -40,9 +34,9 @@ function createParserContext(content: string): ParseContext {
     }
 }
 
-export function createRoot(children): RootNode {
+export function createRoot(children, loc): RootNode {
     return {
-        type: NodeTypes.ROOT,
+        type: NodeTypes.ROOT, // Fragment
         children: children || [],
         helpers: [],
         components: [],
@@ -51,24 +45,28 @@ export function createRoot(children): RootNode {
         imports: [],
         temps: [],
         codegenNode: undefined,
-        cached: []
+        cached: [],
+        loc
     }
 }
 
 function isEnd(context: ParseContext) {
     const s = context.source
     if (s.length === 0) return true
-    if (startsWith(s, '</')) return true
-    if (startsWith(s, '/>')) return true
+    if (startsWith(s, '</') || startsWith(s, '/>')) return true
     return false
 }
 
 export function baseParse(content: string): RootNode {
     const context = createParserContext(content)
 
+    // 保存开始位置
+    const start = getCursor(context)
+
     const children = parseChildren(context)
 
-    const root = createRoot(children)
+    // 利用一开始保存的开始位置和 getSelection 计算 loc
+    const root = createRoot(children, getSelection(context, start))
     console.log(root)
     debugger
     return root
@@ -85,7 +83,7 @@ function parseChildren(context: ParseContext) {
             // 解析标签
             node = parseElement(context)
             // 本次标签解析完成之后，开始新一轮的解析之前，先吃掉空白部分
-            advanceSpaces(context)
+            // advanceSpaces(context)
         } else if (startsWith(source, '{{')) {
             // 解析插值
             node = parseInterpolation(context)
@@ -99,7 +97,18 @@ function parseChildren(context: ParseContext) {
 
         node && nodes.push(node)
     }
-    return nodes
+
+    nodes.forEach((node, index) => {
+        if (node.type === NodeTypes.TEXT) {
+            // 检测是否是一个空白节点
+            if (/^[\t\r\n\f ]+/.test(node.content)) {
+                nodes[index] = null
+            }
+        }
+    })
+
+    // 过滤空白节点
+    return nodes.filter(Boolean)
 }
 
 function parseElement(context: ParseContext) {

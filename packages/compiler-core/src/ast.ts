@@ -48,6 +48,7 @@ export enum ElementTypes {
 // 节点类型
 export interface Node {
     type: NodeTypes
+    loc: any
 }
 
 // 基础元素节点
