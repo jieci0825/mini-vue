@@ -58,12 +58,23 @@ export function createRoot(children): RootNode {
 function isEnd(context: ParseContext) {
     const s = context.source
     if (s.length === 0) return true
+    if (startsWith(s, '</')) return true
+    if (startsWith(s, '/>')) return true
     return false
 }
 
 export function baseParse(content: string): RootNode {
     const context = createParserContext(content)
 
+    const children = parseChildren(context, [])
+
+    const root = createRoot(children)
+    console.log(root)
+    debugger
+    return root
+}
+
+function parseChildren(context: ParseContext, ancestors: Array<any>) {
     let nodes: any = []
     while (!isEnd(context)) {
         const source = context.source
@@ -72,11 +83,10 @@ export function baseParse(content: string): RootNode {
 
         if (startsWith(source, '<')) {
             // 解析标签
-            node = '111'
+            node = parseElement(context)
         } else if (startsWith(source, '{{')) {
             // 解析插值
             node = parseInterpolation(context)
-            debugger
         }
 
         // 没有则当做文本处理
@@ -87,8 +97,58 @@ export function baseParse(content: string): RootNode {
 
         node && nodes.push(node)
     }
+    return nodes
+}
 
-    return createRoot([])
+function parseElement(context: ParseContext) {
+    const element = parseTag(context)
+    // 如果是一个自闭合标签，则直接返回
+    if (element.isSelfClosing) return element
+
+    // 如果不是自闭合标签，则继续标签内的子元素
+    element.children = parseChildren(context, [])
+
+    // 处理当前 element 的结束标签
+    if (startsWith(context.source, '</')) {
+        parseTag(context, TagType.End)
+    }
+
+    // 开始拿到 element 的 loc 属性的 end 是错误的，
+    // - 因为 element 的 children 还没有解析完，上面记录的知识 <div> 的开始位置的结束部分
+    // - 所以要重新记录一下 element 的结束位置
+    element.loc = getSelection(context, element?.loc?.start)
+
+    return element
+}
+
+function parseTag(context: ParseContext, type: TagType = TagType.Start) {
+    const start = getCursor(context)
+    const match = /^<\/?([a-z][^\t\r\n\f />]*)/i.exec(context.source) || []
+    if (!match) {
+        console.warn('错误的语法标签')
+        return {}
+    }
+    const tagName = match[1]
+    // 吃掉标签开始标签 <div
+    advanceBy(context, match[0]!.length)
+    // 吃掉中间的空格
+    advanceSpaces(context)
+
+    // todo: process attrs
+
+    // 检测是否是一个自闭合的标签
+    const isSelfClosing = startsWith(context.source, '/>')
+    const endTagLen = isSelfClosing ? 2 : 1
+    // 吃掉结束标签
+    advanceBy(context, endTagLen)
+
+    return {
+        type: NodeTypes.ELEMENT,
+        tag: tagName,
+        isSelfClosing,
+        children: [],
+        loc: getSelection(context, start)
+    }
 }
 
 function parseInterpolation(context: ParseContext) {
@@ -233,5 +293,3 @@ function getCursor(context: ParseContext) {
         offset
     }
 }
-
-function parseChildren(context: ParseContext, ancestors: []) {}
