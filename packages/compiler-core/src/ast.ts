@@ -1,5 +1,9 @@
 import { isString } from '@vue/shared'
-import { CREATE_ELEMENT_VNODE, CREATE_VNODE } from './runtimeHelpers'
+import {
+    CREATE_ELEMENT_VNODE,
+    CREATE_TEXT_VNODE,
+    CREATE_VNODE
+} from './runtimeHelpers'
 import { TransformContext } from './transform'
 
 // 节点类型
@@ -12,12 +16,14 @@ export enum NodeTypes {
     INTERPOLATION, // 模板插值节点
     ATTRIBUTE, // 属性节点
     DIRECTIVE, // 指令节点
+
     // containers
     COMPOUND_EXPRESSION, // 复合表达式节点 {{a}} abc
     IF, // if节点
     IF_BRANCH, // if分支节点
     FOR, // for节点
     TEXT_CALL, // 文本调用节点
+
     // codegen
     VNODE_CALL, // 虚拟节点调用节点
     JS_CALL_EXPRESSION, // js调用表达式节点
@@ -205,10 +211,11 @@ export function createConditionalExpression(
 /**
  * 创建调用表达式的节点
  */
-export function createCallExpression(callee, args) {
+export function createCallExpression(context: TransformContext, args) {
+    const callee = context.helper(CREATE_TEXT_VNODE)
+
     return {
         type: NodeTypes.JS_CALL_EXPRESSION,
-        loc: {},
         callee,
         arguments: args
     }
@@ -220,7 +227,6 @@ export function createCallExpression(callee, args) {
 export function createSimpleExpression(content, isStatic) {
     return {
         type: NodeTypes.SIMPLE_EXPRESSION,
-        loc: {},
         content,
         isStatic
     }
@@ -232,7 +238,6 @@ export function createSimpleExpression(content, isStatic) {
 export function createObjectProperty(key, value) {
     return {
         type: NodeTypes.JS_PROPERTY,
-        loc: {},
         key: isString(key) ? createSimpleExpression(key, true) : key,
         value
     }
@@ -244,7 +249,6 @@ export function createObjectProperty(key, value) {
 export function createObjectExpression(properties) {
     return {
         type: NodeTypes.JS_OBJECT_EXPRESSION,
-        loc: {},
         properties
     }
 }

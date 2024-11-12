@@ -151,6 +151,9 @@ function parseTag(context: ParseContext, type: TagType = TagType.Start) {
     const endTagLen = isSelfClosing ? 2 : 1
     // 吃掉结束标签
     advanceBy(context, endTagLen)
+    // 吃掉开始标签部分结束标签后面的空格
+    //  - 如：// <div>  123</div> 123 前面的空格
+    advanceSpaces(context)
 
     return {
         type: NodeTypes.ELEMENT,
