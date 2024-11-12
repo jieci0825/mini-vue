@@ -67,8 +67,6 @@ export function baseParse(content: string): RootNode {
 
     // 利用一开始保存的开始位置和 getSelection 计算 loc
     const root = createRoot(children, getSelection(context, start))
-    console.log(root)
-    debugger
     return root
 }
 
