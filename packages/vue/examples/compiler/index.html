@@ -13,7 +13,11 @@
     const { compile } = MiniVue
 
     // 两个根节点
-    const render = compile(`<div></div> <div></div>  `)
+    const render = compile(`<div a="1" class="box">
+      123 {{ abc }} 
+      <span>大河之剑天上来</span> 
+      good morning {{ name }} 
+    </div>  `)
     // console.log(render)
   </script>
 </body>

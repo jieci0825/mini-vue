@@ -164,11 +164,7 @@ export function createVNodeCall(
     props?,
     children?
 ) {
-    if (context) {
-        // 放入一个函数名
-        context.helper(CREATE_ELEMENT_VNODE)
-    }
-
+    context.helper(CREATE_ELEMENT_VNODE)
     return {
         type: NodeTypes.VNODE_CALL,
         props,
