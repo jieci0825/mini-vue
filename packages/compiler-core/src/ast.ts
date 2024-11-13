@@ -160,7 +160,7 @@ export type ExpressionNode = SimpleExpressionNode | CompoundExpressionNode
 
 export function createVNodeCall(
     context: TransformContext,
-    tag: string,
+    tag: string | Symbol,
     props?,
     children?
 ) {

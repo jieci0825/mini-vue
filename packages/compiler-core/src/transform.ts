@@ -1,7 +1,18 @@
-import { isArray, isString } from '@vue/shared'
-import { type RootNode, NodeTypes, ParentNode, TemplateChildNode } from './ast'
-import { TO_DISPLAY_STRING } from './runtimeHelpers'
-import { isSingleElementRoot } from './transforms/cacheStatic'
+import { Fragment } from '@vue/runtime-core'
+import {
+    type RootNode,
+    createVNodeCall,
+    NodeTypes,
+    ParentNode,
+    TemplateChildNode
+} from './ast'
+import {
+    CREATE_ELEMENT_BLOCK,
+    CREATE_ELEMENT_VNODE,
+    FRAGMENT,
+    OPEN_BLOCK,
+    TO_DISPLAY_STRING
+} from './runtimeHelpers'
 
 export interface TransformContext {
     root: RootNode
@@ -12,6 +23,7 @@ export interface TransformContext {
     helpers: Map<symbol, number>
     helper<T extends symbol>(name: T): T
     replaceNode(node): void // 替换当前的处理节点
+    removeHelper(name: symbol): void
 }
 
 // 创建转化上下文
@@ -39,6 +51,17 @@ function createTransformContext(
             if (context.parent) {
                 ;(context.parent as any).children[context.childIndex] = node
             }
+        },
+        removeHelper(name) {
+            const count = context.helpers.get(name)
+            if (count) {
+                const currentCount = count - 1
+                if (!currentCount) {
+                    context.helpers.delete(name)
+                } else {
+                    context.helpers.set(name, currentCount)
+                }
+            }
         }
     }
     return context
@@ -49,6 +72,8 @@ export function transform(root: RootNode, options) {
     const context = createTransformContext(root, options)
 
     traverse(root, context)
+
+    createRootCodegenNode(root, context)
 }
 
 function traverse(node, context: TransformContext) {
@@ -93,5 +118,40 @@ function traverse(node, context: TransformContext) {
     let i = exitFns.length
     while (i--) {
         exitFns[i]()
+    }
+}
+
+function createRootCodegenNode(root: RootNode, context: TransformContext) {
+    const { children } = root
+    if (children.length === 1) {
+        const child = children[0]
+        if (child.type === NodeTypes.ELEMENT) {
+            // 如果是单元素根节点，则直接返回该元素的 codegenNode
+            root.codegenNode = children[0].codegenNode
+            // 但是调用的不再是 createElementVNode，而是 openBlock createElementBlock
+
+            // 删除掉 createElementVNode
+            context.removeHelper(CREATE_ELEMENT_VNODE)
+            // 添加 openBlock createElementBlock
+            context.helper(OPEN_BLOCK)
+            context.helper(CREATE_ELEMENT_BLOCK)
+
+            // 设置 isBlock 为 true，表示该节点是块节点，并且使用的是 createElementBlock
+            root.codegenNode.isBlock = true
+        } else {
+            // 如果是单文本根节点，则简单处理一下
+            root.codegenNode = child.content
+        }
+    } else {
+        // 如果是多个根节点，则添加一个 Fragment
+        root.codegenNode = createVNodeCall(
+            context,
+            context.helper(FRAGMENT),
+            [],
+            children
+        )
+        context.helper(OPEN_BLOCK)
+        context.helper(CREATE_ELEMENT_BLOCK)
+        root.codegenNode.isBlock = true
     }
 }
