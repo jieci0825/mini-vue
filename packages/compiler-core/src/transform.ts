@@ -74,6 +74,8 @@ export function transform(root: RootNode, options) {
     traverse(root, context)
 
     createRootCodegenNode(root, context)
+
+    root.helpers = [...context.helpers.keys()]
 }
 
 function traverse(node, context: TransformContext) {
@@ -143,7 +145,10 @@ function createRootCodegenNode(root: RootNode, context: TransformContext) {
             root.codegenNode = child.content
         }
     } else {
-        // 如果是多个根节点，则添加一个 Fragment
+        // 如果 children 没有，则不处理
+        if (!children.length) return
+
+        // 如果 children 是多个节点，则添加一个 Fragment
         root.codegenNode = createVNodeCall(
             context,
             context.helper(FRAGMENT),

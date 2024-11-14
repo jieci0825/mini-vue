@@ -8,17 +8,31 @@
 </head>
 
 <body>
+  <div id="app"></div>
+
   <script src="../../dist/mini-vue.js"></script>
   <script>
-    const { compile } = MiniVue
+    const { render, compile, h } = MiniVue
 
     // 两个根节点
-    const res = compile(`<div a="1" class="box">
-      123 {{ abc }} 
-      <span>大河之剑天上来</span> 
-      good morning {{ name }} 
-    </div><div></div>`)
-    // console.log(res)
+    const renderFn = compile(`<div>hello {{msg}}
+      <h2>风有约，花不误，年年岁岁不相负</h2>
+      </div>`)
+
+    const MyComp = {
+      render: renderFn,
+      setup() {
+        console.log('setup')
+
+        return {
+          msg: 'world'
+        }
+      }
+    }
+
+    const vnode = h(MyComp)
+
+    render(vnode, document.querySelector('#app'))
   </script>
 </body>
 

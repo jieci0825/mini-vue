@@ -169,7 +169,7 @@ function baseCreateRenderer(
     ) {
         // 处理 Cannot assign to read only property '0' of string 'xxx'
         if (isString(children)) {
-            children = children.split('').map((item) => normalizeVNode(item))
+            children = children.split('').map(item => normalizeVNode(item))
         }
         for (let i = 0; i < children.length; i++) {
             const child = (children[i] = normalizeVNode(children[i]))

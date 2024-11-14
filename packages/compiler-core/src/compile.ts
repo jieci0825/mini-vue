@@ -8,16 +8,6 @@ import { transformExpression } from './transforms/transformExpression'
 
 export function baseCompile(template: string, options = {}) {
     const ast = baseParse(template)
-    console.log(
-        'ast:'
-        // JSON.stringify(ast, (key, value) => {
-        //     if (key === 'loc') {
-        //         return undefined
-        //     }
-        //     return value
-        // })
-        // JSON.stringify(ast)
-    )
 
     // 做一些转换，即收集一些所需的方法
     //  - <div>{{aa}} 123</div> 实际创建的时候，不是创建两个子节点
@@ -34,7 +24,5 @@ export function baseCompile(template: string, options = {}) {
         })
     )
 
-    console.log('ast after transform:', ast)
-    // return generate(ast)
-    return ast
+    return generate(ast)
 }

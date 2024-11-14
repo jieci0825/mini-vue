@@ -64,7 +64,7 @@ export function transformText(node, context: TransformContext) {
                     callArgs.push(child)
                     if (type !== NodeTypes.TEXT) {
                         // 动态节点
-                        callArgs.push(PatchFlags.TEXT) // 靶向更新
+                        callArgs.push(`${PatchFlags.TEXT}`) // 靶向更新
                     }
                     children[i] = {
                         type: NodeTypes.TEXT_CALL, // 表示需要通过 createTextVNode 创建文本节点

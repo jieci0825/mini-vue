@@ -43,7 +43,11 @@ export function createVNode(type: any, props: any, children: any): VNode {
     return createBaseVNode(type, props, children, shapeFlag)
 }
 
-export { createVNode as createElementVNode }
+export { createVNode as createElementBlock }
+export function openBlock() {}
+export function createTextVNode(text: string): VNode {
+    return createVNode(Text, null, text)
+}
 
 function createBaseVNode(
     type: any,
