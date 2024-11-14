@@ -80,7 +80,6 @@ function createCodegenContext(ast): CodegenContext {
 }
 
 export function generate(ast) {
-    console.log(ast.codegenNode)
     const context = createCodegenContext(ast)
 
     const { push, newline, indent, deindent } = context
