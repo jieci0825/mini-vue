@@ -17,6 +17,7 @@ import { ReactiveEffect } from 'packages/reactivity/src/effect'
 import { queuePreFlushCbs } from './scheduler'
 import { normalizeVNode, renderComponentRoot } from './componentRenderUtils'
 import { hasPropsChanged, updateProps } from './componentProps'
+import { createAppAPI } from './apiCreateApp'
 
 export interface CustomElement extends Element {
     _vnode?: VNode
@@ -71,6 +72,7 @@ export function createRenderer(options: RendererOptions) {
 
 interface baseCreateRendererReturn {
     render: (vnode: VNode, container: CustomElement) => void
+    createApp: (rootComponent: any, rootProps?: any) => any
 }
 
 function baseCreateRenderer(
@@ -866,7 +868,8 @@ function baseCreateRenderer(
     }
 
     return {
-        render
+        render,
+        createApp: createAppAPI(render)
     }
 }
 

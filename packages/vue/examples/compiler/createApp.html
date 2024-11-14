@@ -15,7 +15,9 @@
     const { createApp, h } = MiniVue
 
     const App = {
-      template: `<h2>风有约，花不误，年年岁岁不相负</h2>`
+      render() {
+        return h('h2', '风有约，花不误，年年岁岁不相负')
+      }
     }
 
     const app = createApp(App)

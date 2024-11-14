@@ -49,6 +49,7 @@ export function getCurrentInstance() {
 }
 
 let uid = 0
+let compile: any = null
 /**
  * 创建组件实例
  * @param vnode vnode
@@ -128,6 +129,7 @@ export function setupComponent(instance: ComponentInstance) {
         // 处理 setup 函数的返回值
         handleSetupResult(instance, setupResult)
     }
+
     // 不存在则认为是 options api
     finishComponentSetup(instance)
 }
@@ -159,10 +161,20 @@ function finishComponentSetup(instance: ComponentInstance) {
 
     // 如果实例上没有 render 函数，则从组件对象中获取 render 属性，并赋值给实例
     if (!instance.render) {
-        instance.render = Component.render
+        // 如果组件对象中存在 render 属性，则将其赋值给实例的 render 函数
+        if (Component.render) {
+            instance.render = Component.render
+        } else {
+            // 如果没有，则读取 template 属性，并使用编译器生成的 render 函数
+            instance.render = compile(Component.template)
+        }
     }
 
     applyOptions(instance)
+}
+
+export function registerRuntimeCompiler(_compile: Function) {
+    compile = _compile
 }
 
 function applyOptions(instance: ComponentInstance) {
