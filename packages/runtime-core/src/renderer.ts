@@ -167,7 +167,8 @@ function baseCreateRenderer(
     function mountChildren(
         children: VNode[],
         container: CustomElement,
-        anchor?: any
+        anchor?: any,
+        parentComponent?: any
     ) {
         // 处理 Cannot assign to read only property '0' of string 'xxx'
         if (isString(children)) {
@@ -175,7 +176,7 @@ function baseCreateRenderer(
         }
         for (let i = 0; i < children.length; i++) {
             const child = (children[i] = normalizeVNode(children[i]))
-            patch(null, child, container, anchor)
+            patch(null, child, container, anchor, parentComponent)
         }
     }
 
@@ -185,7 +186,8 @@ function baseCreateRenderer(
     function mountElement(
         vnode: VNode,
         container: CustomElement,
-        anchor?: any
+        anchor?: any,
+        parentComponent?: any
     ) {
         const { type, shapeFlag, props } = vnode
 
@@ -198,7 +200,7 @@ function baseCreateRenderer(
         // 3、处理 children 为数组的情况，也只会为数组，就算值传低了一个虚拟节点，也会被封装成数组，在 h 函数中处理了
         else if (shapeFlag & ShapeFlags.ARRAY_CHILDREN) {
             // 这里直接挂载子节点即可
-            mountChildren(vnode.children, el, anchor)
+            mountChildren(vnode.children, el, anchor, parentComponent)
         }
         // 4、设置元素属性
         if (props) {
@@ -217,10 +219,13 @@ function baseCreateRenderer(
     function mountComponent(
         initialVNode: VNode,
         container: CustomElement,
-        anchor?: any
+        anchor?: any,
+        parentComponent?: any
     ) {
-        const instance = (initialVNode.component =
-            createComponentInstance(initialVNode))
+        const instance = (initialVNode.component = createComponentInstance(
+            initialVNode,
+            parentComponent
+        ))
 
         // 在 setupComponent 主要进行 render 函数的绑定
         //  - 并且会在里面进行组件实例化和生命周期函数的处理等
@@ -249,7 +254,7 @@ function baseCreateRenderer(
     /**
      * 更新组件
      */
-    function updateComponent(n1: VNode, n2: VNode) {
+    function updateComponent(n1: VNode, n2: VNode, parentComponent?: any) {
         // * 被动更新，比如父传子，子组件的 props 发生变化，子组件会触发更新
         // 此时子组件发生的更新就是被动更新
 
@@ -299,7 +304,8 @@ function baseCreateRenderer(
                 //  - 这里是组件对象里面的 render 而非是渲染器里面的 render
                 const subTree = renderComponentRoot(instance)
                 // 执行挂载
-                patch(null, subTree, container, anchor)
+                //  - 这里初次挂载生成的实例，就是一个父组件实例
+                patch(null, subTree, container, anchor, instance)
 
                 // 在组件被挂载之后调用
                 invokeArrayFns(m)
@@ -325,7 +331,7 @@ function baseCreateRenderer(
                 instance.subTree = nextTree
 
                 // 更新
-                patch(prevTree, nextTree, container)
+                patch(prevTree, nextTree, container, anchor, instance)
 
                 instance.vnode.el = nextTree.el
 
@@ -388,7 +394,8 @@ function baseCreateRenderer(
         oldVNode: VNode,
         newVNode: VNode,
         container: CustomElement,
-        anchor?: any
+        anchor?: any,
+        parentComponent?: any
     ) {
         //获取旧节点的 children
         const c1 = oldVNode && oldVNode.children
@@ -404,8 +411,6 @@ function baseCreateRenderer(
             }
         }
         const { shapeFlag } = newVNode
-
-        // debugger
 
         // 进行不同状态的判断
 
@@ -430,9 +435,21 @@ function baseCreateRenderer(
                 if (shapeFlag & ShapeFlags.ARRAY_CHILDREN) {
                     // 进行简略的判断，只要两个子数组第一个数据有 key 属性，即表示都有 key
                     if (c1[0]?.key && c2[0]?.key) {
-                        patchKeyChildren(c1, c2, container, anchor)
+                        patchKeyChildren(
+                            c1,
+                            c2,
+                            container,
+                            anchor,
+                            parentComponent
+                        )
                     } else {
-                        patchUnkeyedChildren(c1, c2, container, anchor)
+                        patchUnkeyedChildren(
+                            c1,
+                            c2,
+                            container,
+                            anchor,
+                            parentComponent
+                        )
                     }
                 }
                 // 新节点的 children 不是一个数组，也不是一个文本节点，则需要进行卸载，则卸载旧节点的 children
@@ -450,7 +467,7 @@ function baseCreateRenderer(
 
                 // 如果新节点是一个数组，则将新节点的 children 进行单独的挂载
                 if (shapeFlag & ShapeFlags.ARRAY_CHILDREN) {
-                    mountChildren(c2, container, anchor)
+                    mountChildren(c2, container, anchor, parentComponent)
                 }
             }
         }
@@ -463,7 +480,8 @@ function baseCreateRenderer(
         c1: VNode[],
         c2: VNode[],
         container: CustomElement,
-        anchor: any
+        anchor: any,
+        parentComponent?: any
     ) {
         const oldLen = c1.length
         const newLen = c2.length
@@ -486,7 +504,7 @@ function baseCreateRenderer(
 
         //  - 如果 c1 小于 c2，则表示需要新增元素
         if (oldLen < newLen) {
-            mountChildren(c2.slice(minLen), container, anchor)
+            mountChildren(c2.slice(minLen), container, anchor, parentComponent)
         }
     }
 
@@ -497,7 +515,8 @@ function baseCreateRenderer(
         c1: VNode[],
         c2: VNode[],
         container: CustomElement,
-        parentAnchor: any
+        parentAnchor: any,
+        parentComponent?: any
     ) {
         const oldChildren = c1 // 旧子节点数组
         const newChildren = c2 // 新子节点数组
@@ -517,7 +536,7 @@ function baseCreateRenderer(
             // 如果新旧节点不相等，则进行 patch，否则直接跳过
             if (isSameVNodeType(prevChild, nextChild)) {
                 // 一样的vnode，不需要传入锚点，只需要更新即可
-                patch(prevChild, nextChild, container, null)
+                patch(prevChild, nextChild, container, null, parentComponent)
             } else {
                 break
             }
@@ -533,7 +552,7 @@ function baseCreateRenderer(
             const prevChild = oldChildren[oldIndexEnd] // 旧节点
             const nextChild = normalizeVNode(newChildren[newIndexEnd]) // 新节点
             if (isSameVNodeType(prevChild, nextChild)) {
-                patch(prevChild, nextChild, container, null)
+                patch(prevChild, nextChild, container, null, parentComponent)
             } else {
                 break
             }
@@ -563,7 +582,13 @@ function baseCreateRenderer(
                         ? newChildren[nextPos].el
                         : parentAnchor
                 while (i <= newIndexEnd) {
-                    patch(null, newChildren[i], container, anchor)
+                    patch(
+                        null,
+                        newChildren[i],
+                        container,
+                        anchor,
+                        parentComponent
+                    )
                     i++
                 }
             }
@@ -648,7 +673,13 @@ function baseCreateRenderer(
                     // 新节点的相对下标 = newIndex - newStartIndex
                     newIndexToOldIndexMap[newIndex - newStartIndex] = i + 1
 
-                    patch(prevChild, newChildren[newIndex], container, null)
+                    patch(
+                        prevChild,
+                        newChildren[newIndex],
+                        container,
+                        null,
+                        parentComponent
+                    )
                     patched++
                 }
             }
@@ -678,7 +709,7 @@ function baseCreateRenderer(
                 // 判断节点是否需要进行 mount
                 // - 如果 newIndexToOldIndexMap[i] === 0，则说明这个节点是新增的
                 if (newIndexToOldIndexMap[i] === 0) {
-                    patch(null, nextChild, container, anchor)
+                    patch(null, nextChild, container, anchor, parentComponent)
                 } else if (moved) {
                     // 可能需要 move
                     // 如果 lastSequenceIndex < 0，则说明不存在最长递增子序列，所有的节点都是需要移动的
@@ -702,14 +733,18 @@ function baseCreateRenderer(
      * @param oldVNode 旧的 vnode
      * @param newVNode 新的 vnode
      */
-    function updateElement(oldVNode: VNode, newVNode: VNode) {
+    function updateElement(
+        oldVNode: VNode,
+        newVNode: VNode,
+        parentComponent: CustomElement
+    ) {
         // 将 dom 也保存到新的 vnode 中，方便后续对比
         const el = (newVNode.el = oldVNode.el)
 
         const oldProps = oldVNode.props || EMPTY_OBJ
         const newProps = newVNode.props || EMPTY_OBJ
 
-        patchChildren(oldVNode, newVNode, el, null)
+        patchChildren(oldVNode, newVNode, el, null, parentComponent)
 
         patchProps(el, newVNode, oldProps, newProps)
     }
@@ -755,13 +790,20 @@ function baseCreateRenderer(
         oldVNode: VNode | null,
         newVNode: VNode,
         container: CustomElement,
-        anchor?: any
+        anchor?: any,
+        parentComponent?: any
     ) {
         // 旧节点不存在则直接挂载
         if (oldVNode === null) {
-            mountChildren(newVNode.children, container, anchor)
+            mountChildren(newVNode.children, container, anchor, parentComponent)
         } else {
-            patchChildren(oldVNode, newVNode, container, anchor)
+            patchChildren(
+                oldVNode,
+                newVNode,
+                container,
+                anchor,
+                parentComponent
+            )
         }
     }
 
@@ -772,14 +814,15 @@ function baseCreateRenderer(
         oldVNode: VNode | null,
         newVNode: VNode,
         container: CustomElement,
-        anchor?: any
+        anchor?: any,
+        parentComponent?: any
     ) {
         if (oldVNode === null) {
             // 如果 oldVNode 为 null，则表示需要执行挂载操作
-            mountElement(newVNode, container, anchor)
+            mountElement(newVNode, container, anchor, parentComponent)
         } else {
             // 如果 oldVNode 不为 null，则表示需要执行更新操作
-            updateElement(oldVNode, newVNode)
+            updateElement(oldVNode, newVNode, parentComponent)
         }
     }
 
@@ -790,13 +833,14 @@ function baseCreateRenderer(
         oldVNode: VNode | null,
         newVNode: VNode,
         container: CustomElement,
-        anchor?: any
+        anchor?: any,
+        parentComponent?: any
     ) {
         if (oldVNode === null) {
             // 如果 oldVNode 为 null，则表示需要执行挂载操作
-            mountComponent(newVNode, container, anchor)
+            mountComponent(newVNode, container, anchor, parentComponent)
         } else {
-            updateComponent(oldVNode, newVNode)
+            updateComponent(oldVNode, newVNode, parentComponent)
         }
     }
 
@@ -806,12 +850,14 @@ function baseCreateRenderer(
      * @param newVNode 新的 vnode
      * @param container 容器
      * @param anchor 锚点
+     * @param parentComponent 父组件
      */
     function patch(
         oldVNode: VNode | null,
         newVNode: VNode,
         container: CustomElement,
-        anchor?: any
+        anchor: any = null,
+        parentComponent: any = null
     ) {
         if (oldVNode === newVNode) return
 
@@ -834,14 +880,32 @@ function baseCreateRenderer(
                 processComment(oldVNode, newVNode, container, anchor)
                 break
             case Fragment:
-                processFragment(oldVNode, newVNode, container, anchor)
+                processFragment(
+                    oldVNode,
+                    newVNode,
+                    container,
+                    anchor,
+                    parentComponent
+                )
                 break
             default:
                 // 如果都不是，则分为元素和组件来处理
                 if (shapeFlag & ShapeFlags.ELEMENT) {
-                    processElement(oldVNode, newVNode, container, anchor)
+                    processElement(
+                        oldVNode,
+                        newVNode,
+                        container,
+                        anchor,
+                        parentComponent
+                    )
                 } else if (shapeFlag & ShapeFlags.STATEFUL_COMPONENT) {
-                    processComponent(oldVNode, newVNode, container, anchor)
+                    processComponent(
+                        oldVNode,
+                        newVNode,
+                        container,
+                        anchor,
+                        parentComponent
+                    )
                 }
         }
     }

@@ -6,6 +6,7 @@ import { initProps } from './componentProps'
 
 export interface ComponentInstance {
     uid: number
+    parent: any
     vnode: VNode
     type: any
     subTree: any
@@ -54,11 +55,15 @@ let compile: any = null
  * 创建组件实例
  * @param vnode vnode
  */
-export function createComponentInstance(vnode: VNode): ComponentInstance {
+export function createComponentInstance(
+    vnode: VNode,
+    parent: any
+): ComponentInstance {
     const type = vnode.type
 
     const instance = {
         uid: uid++,
+        parent, // 父组件实例
         vnode,
         type,
         subTree: null, // 组件内部渲染的树
