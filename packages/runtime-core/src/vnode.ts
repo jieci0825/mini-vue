@@ -2,6 +2,7 @@ import { ShapeFlags } from 'packages/shared/src/shapFlags'
 import { IsVNode } from './constants'
 import { isArray, isFunction, isObject, isString } from '@vue/shared'
 import { normalizeClass } from './normalizeProp'
+import { isTeleportComponent } from './components/Teleport'
 
 export const Text = Symbol('Text')
 export const Comment = Symbol('Comment')
@@ -34,6 +35,8 @@ export function createVNode(type: any, props: any, children: any): VNode {
     //  - 如果是一个 string 则当做一个 html 标签来处理
     if (isString(type)) {
         shapeFlag = ShapeFlags.ELEMENT
+    } else if (isTeleportComponent(type)) {
+        shapeFlag = ShapeFlags.TELEPORT
     }
     // - 如果是一个对象，则当做一个组件来处理
     else if (isObject(type)) {

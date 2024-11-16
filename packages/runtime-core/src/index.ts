@@ -1,3 +1,4 @@
+export { TeleportImpl, isTeleportComponent } from './components/Teleport'
 export {
     onMounted,
     onBeforeMount,

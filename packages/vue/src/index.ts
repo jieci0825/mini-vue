@@ -23,7 +23,8 @@ export {
     onUpdated,
     getCurrentInstance,
     inject,
-    provide
+    provide,
+    TeleportImpl as Teleport
 } from '@vue/runtime-core'
 export { render, createApp } from '@vue/runtime-dom'
 // export { compile } from '@vue/compiler-dom'

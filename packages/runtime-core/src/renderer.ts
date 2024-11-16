@@ -108,7 +108,7 @@ function baseCreateRenderer(
      * 移动元素
      */
     function move(vnode: VNode, container: CustomElement, anchor?: any) {
-        const { el } = vnode
+        const el = vnode.component ? vnode.component.subTree.el : vnode.el
         hostInsert(el, container, anchor)
     }
 
@@ -906,6 +906,12 @@ function baseCreateRenderer(
                         anchor,
                         parentComponent
                     )
+                } else if (shapeFlag & ShapeFlags.TELEPORT) {
+                    type.process(oldVNode, newVNode, {
+                        mountChildren,
+                        patchChildren,
+                        move
+                    })
                 }
         }
     }
