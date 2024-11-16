@@ -21,7 +21,9 @@ export {
     onMounted,
     onBeforeUpdate,
     onUpdated,
-    getCurrentInstance
+    getCurrentInstance,
+    inject,
+    provide
 } from '@vue/runtime-core'
 export { render, createApp } from '@vue/runtime-dom'
 // export { compile } from '@vue/compiler-dom'

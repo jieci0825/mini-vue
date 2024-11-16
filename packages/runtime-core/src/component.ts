@@ -6,6 +6,7 @@ import { initProps } from './componentProps'
 
 export interface ComponentInstance {
     uid: number
+    provides: any
     parent: any
     vnode: VNode
     type: any
@@ -63,6 +64,8 @@ export function createComponentInstance(
 
     const instance = {
         uid: uid++,
+        // 所有组件使用的都是父组件的 provides
+        provides: parent ? parent.provides : Object.create(null),
         parent, // 父组件实例
         vnode,
         type,
