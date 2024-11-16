@@ -169,21 +169,21 @@ export function defineAsyncComponent(options) {
           clearTimeout(loadingTimer)
         })
 
-      loader()
-        .then(c => {
-          InnerComp = c
-          loaded.value = true
-        })
-        .catch(err => {
-          // 添加 catch 语句来捕获加载过程中的错误
-          error.value = err
-        })
-        .finally(() => {
-          // 完成后，无论成功还是失败，都将 loading.value 重置为 false
-          loading.value = false
-          // 无论加载成功还是失败，都清除定时器
-          clearTimeout(loadingTimer)
-        })
+      // loader()
+      //   .then(c => {
+      //     InnerComp = c
+      //     loaded.value = true
+      //   })
+      //   .catch(err => {
+      //     // 添加 catch 语句来捕获加载过程中的错误
+      //     error.value = err
+      //   })
+      //   .finally(() => {
+      //     // 完成后，无论成功还是失败，都将 loading.value 重置为 false
+      //     loading.value = false
+      //     // 无论加载成功还是失败，都清除定时器
+      //     clearTimeout(loadingTimer)
+      //   })
 
       let timer = null
       if (options.timeout) {

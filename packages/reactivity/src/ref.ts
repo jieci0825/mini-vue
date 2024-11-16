@@ -36,15 +36,15 @@ class RefImpl<T> {
     }
 }
 
-export function ref<T>(value?: unknown) {
-    return crateRef<T>(value as T, false)
+export function ref(value?: unknown) {
+    return crateRef(value, false)
 }
 
-function crateRef<T>(rawValue: T, isShallow: boolean) {
+function crateRef(rawValue, isShallow: boolean) {
     if (isRef(rawValue)) {
         return rawValue
     }
-    return new RefImpl<T>(rawValue, isShallow)
+    return new RefImpl(rawValue, isShallow)
 }
 
 export function trackRefValue(ref: any) {

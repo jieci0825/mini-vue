@@ -92,6 +92,12 @@ function baseCreateRenderer(
      * 卸载元素
      */
     function unmount(vnode: VNode) {
+        if (vnode.type === Fragment) {
+            return unmountChildren(vnode.children)
+        }
+        if (vnode.shapeFlag & ShapeFlags.COMPONENT) {
+            return unmount(vnode.component.subTree)
+        }
         hostRemove(vnode.el)
     }
 

@@ -24,7 +24,8 @@ export {
     getCurrentInstance,
     inject,
     provide,
-    TeleportImpl as Teleport
+    TeleportImpl as Teleport,
+    defineAsyncComponent
 } from '@vue/runtime-core'
 export { render, createApp } from '@vue/runtime-dom'
 // export { compile } from '@vue/compiler-dom'
