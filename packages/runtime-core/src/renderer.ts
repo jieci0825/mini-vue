@@ -904,7 +904,7 @@ function baseCreateRenderer(
                         anchor,
                         parentComponent
                     )
-                } else if (shapeFlag & ShapeFlags.STATEFUL_COMPONENT) {
+                } else if (shapeFlag & ShapeFlags.COMPONENT) {
                     processComponent(
                         oldVNode,
                         newVNode,

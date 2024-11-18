@@ -168,7 +168,8 @@ function finishComponentSetup(instance: ComponentInstance) {
     const Component = instance.type
 
     // 如果实例上没有 render 函数，则从组件对象中获取 render 属性，并赋值给实例
-    if (!instance.render) {
+    // 且需要判断 Component 本身是否是一个函数，如果本身就是一个函数，表示这是一个函数式组件，则 Component 就是 render 函数
+    if (!instance.render && !isFunction(Component)) {
         // 如果组件对象中存在 render 属性，则将其赋值给实例的 render 函数
         if (Component.render) {
             instance.render = Component.render

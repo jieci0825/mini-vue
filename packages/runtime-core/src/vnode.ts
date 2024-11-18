@@ -32,13 +32,19 @@ export function createVNode(type: any, props: any, children: any): VNode {
 
     // 处理 shapeFlag
     let shapeFlag = 0
-    //  - 如果是一个 string 则当做一个 html 标签来处理
+    //  - 如果是 string 则当做一个 html 标签来处理
     if (isString(type)) {
         shapeFlag = ShapeFlags.ELEMENT
-    } else if (isTeleportComponent(type)) {
+    }
+    // - 如果是 Teleport 组件，则当做一个 Teleport 组件来处理
+    else if (isTeleportComponent(type)) {
         shapeFlag = ShapeFlags.TELEPORT
     }
-    // - 如果是一个对象，则当做一个组件来处理
+    // - 如果是函数，则当做一个组件来处理
+    else if (isFunction(type)) {
+        shapeFlag = ShapeFlags.FUNCTIONAL_COMPONENT
+    }
+    // - 如果是对象，则当做一个组件来处理
     else if (isObject(type)) {
         shapeFlag = ShapeFlags.STATEFUL_COMPONENT
     }

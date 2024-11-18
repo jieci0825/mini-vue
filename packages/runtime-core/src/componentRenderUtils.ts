@@ -15,6 +15,10 @@ export function renderComponentRoot(instance: ComponentInstance) {
             //  - 所以如果要让 with(_ctx) 的 _ctx 也指向 data，那么就要把 data 也作为参数传递进去
             result = normalizeVNode(render.call(proxy, proxy))
         }
+        // 如果是一个函数式组件的话，则 vnode.type 本身就是一个函数，即 vnode.type 本身就是一个 render 函数
+        else if (vnode.shapeFlag & ShapeFlags.FUNCTIONAL_COMPONENT) {
+            result = normalizeVNode(vnode.type.call(proxy, proxy))
+        }
     } catch (error) {
         console.error(error)
     }
