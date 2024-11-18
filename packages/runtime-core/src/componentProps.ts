@@ -1,6 +1,7 @@
-import { hasChanged, hasOwn, isOn, startsWith } from '@vue/shared'
+import { hasChanged, hasOwn, isFunction, isOn, startsWith } from '@vue/shared'
 import { reactive } from '@vue/reactivity'
 import type { ComponentInstance } from './component'
+import { ShapeFlags } from 'packages/shared/src/shapFlags'
 
 export function initProps(instance: ComponentInstance, compProps: any) {
     // 获取生成 vnode 时传入的 props
@@ -23,6 +24,11 @@ export function initProps(instance: ComponentInstance, compProps: any) {
     // * 实际上应该使用 shallowReactive，只负责第一层，浅层的
     instance.props = reactive(props)
     instance.attrs = attrs
+
+    // * 注意：如果是函数组件的话，则 attrs 就是 props
+    if (instance.vnode.shapeFlag & ShapeFlags.FUNCTIONAL_COMPONENT) {
+        instance.props = attrs
+    }
 }
 
 /**
