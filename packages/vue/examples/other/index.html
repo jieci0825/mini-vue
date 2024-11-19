@@ -12,25 +12,94 @@
         <script src="../../dist/mini-vue.js"></script>
 
         <script>
-            const {
-                h,
-                ref,
-                defineAsyncComponent,
-                reactive,
-                getCurrentInstance,
-                render
-            } = MiniVue
+            const { h, render, onMounted, KeepAlive } = MiniVue
 
-            // 函数式组件直接返回虚拟节点，只用于接受数据并且渲染
-            const myComp = props => {
-                console.log('函数式组件', props)
+            // const functionComp = props => {
+            //     console.log('函数式组件', props)
 
-                return h('div', props.$attrs.msg)
+            //     return h('div', props.$attrs.msg)
+            // }
+            // // 会弹出警告，必须是一个带状态的组件
+            // render(
+            //     h(KeepAlive, null, {
+            //         default: () => h(myComp)
+            //     }),
+            //     document.querySelector('#app')
+            // )
+
+            const comp1 = {
+                name: 'Comp1',
+                setup() {
+                    onMounted(() => {
+                        console.log('comp1 mounted')
+                    })
+                },
+
+                render() {
+                    return h('div', 'comp1')
+                }
             }
 
-            const vnode = h(myComp, { msg: '风有约，花不误，年年岁岁不相负' })
+            const comp2 = {
+                name: 'Comp2',
+                setup() {
+                    onMounted(() => {
+                        console.log('comp2 mounted')
+                    })
+                },
 
-            render(vnode, document.querySelector('#app'))
+                render() {
+                    return h('div', 'comp2')
+                }
+            }
+
+            // let cur = comp1
+            // window.update = () => {
+            //     render(
+            //         h(KeepAlive, null, {
+            //             default: () => h(cur)
+            //         }),
+            //         document.querySelector('#app')
+            //     )
+            //     cur = cur === comp1 ? comp2 : comp1
+            // }
+            // update()
+
+            const keepAliveProps = {
+                include: ['Comp1'],
+                exclude: 'Comp2'
+            }
+
+            // 首次渲染 comp1
+            //  - 打印 'comp1 mounted'
+            render(
+                h(KeepAlive, keepAliveProps, {
+                    default: () => h(comp1)
+                }),
+                document.querySelector('#app')
+            )
+
+            // 1秒后切换到 comp2
+            //  - 打印 'comp2 mounted'
+            // setTimeout(() => {
+            //     render(
+            //         h(KeepAlive, keepAliveProps, {
+            //             default: () => h(comp2)
+            //         }),
+            //         document.querySelector('#app')
+            //     )
+            // }, 1000)
+
+            // 2秒后切换回 comp1
+            //  - 不打印 'comp1 mounted'
+            // setTimeout(() => {
+            //     render(
+            //         h(KeepAlive, keepAliveProps, {
+            //             default: () => h(comp1)
+            //         }),
+            //         document.querySelector('#app')
+            //     )
+            // }, 2000)
         </script>
     </body>
 </html>

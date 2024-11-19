@@ -1,4 +1,5 @@
 export { TeleportImpl, isTeleportComponent } from './components/Teleport'
+export { KeepAliveImpl, isKeepAliveComponent } from './components/KeepAlive'
 export {
     onMounted,
     onBeforeMount,

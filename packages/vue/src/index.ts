@@ -25,7 +25,8 @@ export {
     inject,
     provide,
     TeleportImpl as Teleport,
-    defineAsyncComponent
+    defineAsyncComponent,
+    KeepAliveImpl as KeepAlive
 } from '@vue/runtime-core'
 export { render, createApp } from '@vue/runtime-dom'
 // export { compile } from '@vue/compiler-dom'

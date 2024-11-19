@@ -3,6 +3,7 @@ import { VNode } from '../vnode'
 const isTeleport = Symbol('__v_isTeleport')
 
 export const TeleportImpl = {
+    name: `Teleport`,
     [isTeleport]: true,
     process(oldVNode: VNode, newVNode: VNode, internals) {
         const { mountChildren, patchChildren, move } = internals

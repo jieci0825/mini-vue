@@ -72,7 +72,7 @@ function createBaseVNode(
         shapeFlag,
         el: null,
         key: props?.key ?? null,
-        component: null
+        component: null // 组件实例
     }
 
     normalizeChildren(vnode, children)

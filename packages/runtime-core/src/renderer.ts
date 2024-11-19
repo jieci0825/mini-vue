@@ -3,6 +3,7 @@ import { Comment, Fragment, isSameVNodeType, Text, VNode } from './vnode'
 import {
     EMPTY_ARR,
     EMPTY_OBJ,
+    extend,
     hasChanged,
     invokeArrayFns,
     isFunction,
@@ -18,6 +19,7 @@ import { queuePreFlushCbs } from './scheduler'
 import { normalizeVNode, renderComponentRoot } from './componentRenderUtils'
 import { hasPropsChanged, updateProps } from './componentProps'
 import { createAppAPI } from './apiCreateApp'
+import { isKeepAliveComponent } from './components/KeepAlive'
 
 export interface CustomElement extends Element {
     _vnode?: VNode
@@ -91,12 +93,21 @@ function baseCreateRenderer(
     /**
      * 卸载元素
      */
-    function unmount(vnode: VNode) {
+    function unmount(vnode: VNode, parentComponent: any) {
         if (vnode.type === Fragment) {
-            return unmountChildren(vnode.children)
+            return unmountChildren(vnode.children, parentComponent)
         }
-        if (vnode.shapeFlag & ShapeFlags.COMPONENT) {
-            return unmount(vnode.component.subTree)
+        // 处理被 KeepAlive 组件包裹的组件的卸载，做一个假卸载
+        else if (vnode.shapeFlag & ShapeFlags.COMPONENT_SHOULD_KEEP_ALIVE) {
+            // 这里拿到的是 keepAlive 组件的里面包裹的组件的 vnode
+            // 所以需要通过 parentComponent 获取到 keepAlive 组件的里面的相关方法
+            const { deactivate } = parentComponent.ctx
+            deactivate(vnode)
+            return
+        }
+        // 卸载组件
+        else if (vnode.shapeFlag & ShapeFlags.COMPONENT) {
+            return unmount(vnode.component.subTree, null)
         }
         hostRemove(vnode.el)
     }
@@ -104,9 +115,9 @@ function baseCreateRenderer(
     /**
      * 批量卸载子节点
      */
-    function unmountChildren(children: VNode[]) {
+    function unmountChildren(children: VNode[], parentComponent: any) {
         for (let i = 0; i < children.length; i++) {
-            unmount(children[i])
+            unmount(children[i], parentComponent)
         }
     }
 
@@ -233,6 +244,17 @@ function baseCreateRenderer(
             parentComponent
         ))
 
+        // 给实例上下文添加一些方法
+        if (isKeepAliveComponent(initialVNode.type)) {
+            instance.ctx.renderer = {
+                createElement: hostCreateElement,
+                move(vnode: VNode, container: CustomElement, anchor?: any) {
+                    // 这里移动的肯定是组件
+                    hostInsert(vnode.component.subTree.el, container, anchor)
+                }
+            }
+        }
+
         // 在 setupComponent 主要进行 render 函数的绑定
         //  - 并且会在里面进行组件实例化和生命周期函数的处理等
         setupComponent(instance)
@@ -289,6 +311,13 @@ function baseCreateRenderer(
         // next 即为本次更新的 vnode
         // instance.props 存在的就是初次挂载时，经过和组件的props合并后的 props，记录的是子组件需要的 props
         updateProps(instance.props, next.props)
+
+        // 更新插槽
+        //  - 这里就简单的认为 children 就是插槽
+        //  - 不能直接赋值，会导致之前插槽的引用关系丢失，这样 keepAlive 组件里面的 slot 就不会更新了
+        //  - 因为 keepAlive 中的 slot 会因为闭包的原因，一直是旧的 slot 对象内存地址，所以不能直接覆盖
+        // instance.slots = next.children
+        extend(instance.slots, next.children)
     }
 
     function setupRenderEffect(
@@ -313,12 +342,12 @@ function baseCreateRenderer(
                 //  - 这里初次挂载生成的实例，就是一个父组件实例
                 patch(null, subTree, container, anchor, instance)
 
-                // 在组件被挂载之后调用
-                invokeArrayFns(m)
-
                 instance.subTree = subTree
                 initialVNode.el = subTree.el
                 instance.isMounted = true
+
+                // 在组件被挂载之后调用
+                invokeArrayFns(m)
             } else {
                 let { next, bu, u } = instance
 
@@ -426,7 +455,7 @@ function baseCreateRenderer(
             //  - 这里在 h 函数中进行了 children 的参数处理，如果 h(div,null,vnode) 会包装为 h(div,null,[vnode])
             //  - 所以如果不是数组，就是字符串
             if (prevShapeFlag & ShapeFlags.ARRAY_CHILDREN) {
-                unmountChildren(oldVNode.children)
+                unmountChildren(oldVNode.children, parentComponent)
             }
 
             // 如果新旧节点的字符串内容不一样，则直接更新文本内容
@@ -461,7 +490,7 @@ function baseCreateRenderer(
                 // 新节点的 children 不是一个数组，也不是一个文本节点，则需要进行卸载，则卸载旧节点的 children
                 else {
                     // todo 卸载旧节点的 children
-                    unmountChildren(c1)
+                    unmountChildren(c1, parentComponent)
                 }
             }
             // 旧节点的 children 也不是数组的处理
@@ -505,7 +534,7 @@ function baseCreateRenderer(
         // 公共节点对比完后的处理
         //  - 如果 c1 大于 c2 则存在多余的旧节点，进行卸载
         if (oldLen > newLen) {
-            unmountChildren(c1.slice(minLen))
+            unmountChildren(c1.slice(minLen), parentComponent)
         }
 
         //  - 如果 c1 小于 c2，则表示需要新增元素
@@ -611,7 +640,7 @@ function baseCreateRenderer(
         else if (i > newIndexEnd) {
             // 索引 i 必须要处于 oldIndexEnd 之内，才表示是一个有效的旧节点
             while (i <= oldIndexEnd) {
-                unmount(oldChildren[i])
+                unmount(oldChildren[i], parentComponent)
                 i++
             }
         }
@@ -653,7 +682,7 @@ function baseCreateRenderer(
                 const prevChild = oldChildren[i]
                 if (patched >= toBePatched) {
                     // 如果更新的次数大于等于需要更新的节点数量，则说明剩下的节点都是需要卸载的
-                    unmount(prevChild)
+                    unmount(prevChild, parentComponent)
                     continue // 不使用 break，因为可能还有剩余的节点需要卸载
                 }
 
@@ -661,7 +690,7 @@ function baseCreateRenderer(
                 let newIndex = keyToNewIndexMap.get(prevChild.key)
                 if (newIndex === undefined) {
                     // 如果没找到，则说明这个节点需要卸载
-                    unmount(prevChild)
+                    unmount(prevChild, parentComponent)
                 } else {
                     // old: a b (c d)
                     // new: b a (c d)
@@ -843,8 +872,14 @@ function baseCreateRenderer(
         parentComponent?: any
     ) {
         if (oldVNode === null) {
-            // 如果 oldVNode 为 null，则表示需要执行挂载操作
-            mountComponent(newVNode, container, anchor, parentComponent)
+            // 判断是否是 keepAlive 组件
+            if (newVNode.shapeFlag & ShapeFlags.COMPONENT_KEPT_ALIVE) {
+                // 如果是则调用 keepAlive 的激活方法
+                parentComponent.ctx.activate(newVNode, container, anchor)
+            } else {
+                // 如果 oldVNode 为 null，则表示需要执行挂载操作
+                mountComponent(newVNode, container, anchor, parentComponent)
+            }
         } else {
             updateComponent(oldVNode, newVNode, parentComponent)
         }
@@ -870,7 +905,7 @@ function baseCreateRenderer(
         // 若旧节点存在，且两个节点类型不一致，则卸载旧节点，在挂载新节点
         //  - 如果是组件，每次都是不同的组件对象，type 就是 render，所以类型一定不一致
         if (oldVNode && !isSameVNodeType(oldVNode, newVNode)) {
-            unmount(oldVNode)
+            unmount(oldVNode, parentComponent)
             // 卸载后将 oldVNode 设置为 null，后续就会执行挂载操作
             oldVNode = null
         }
@@ -904,7 +939,9 @@ function baseCreateRenderer(
                         anchor,
                         parentComponent
                     )
-                } else if (shapeFlag & ShapeFlags.COMPONENT) {
+                }
+                // 状态组件 | 函数式组件
+                else if (shapeFlag & ShapeFlags.COMPONENT) {
                     processComponent(
                         oldVNode,
                         newVNode,
@@ -912,7 +949,9 @@ function baseCreateRenderer(
                         anchor,
                         parentComponent
                     )
-                } else if (shapeFlag & ShapeFlags.TELEPORT) {
+                }
+                // teleport
+                else if (shapeFlag & ShapeFlags.TELEPORT) {
                     type.process(oldVNode, newVNode, {
                         mountChildren,
                         patchChildren,
@@ -932,7 +971,7 @@ function baseCreateRenderer(
         if (vnode == null) {
             // 卸载容器里面的元素
             if (container._vnode) {
-                unmount(container._vnode)
+                unmount(container._vnode, null)
             }
         } else {
             // 如果不为 null，则进行 patch 操作

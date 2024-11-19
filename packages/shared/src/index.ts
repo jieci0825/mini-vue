@@ -17,7 +17,7 @@ export const isNumber = (value: unknown): value is number => {
     return typeof value === 'number'
 }
 
-export const isArray = (value: unknown): value is [] => {
+export const isArray = (value: unknown): value is any[] => {
     return Array.isArray(value)
 }
 
@@ -31,6 +31,14 @@ export const isObject = (value: unknown): value is object => {
 
 export const isEqual = (value1: any, value2: any) => {
     return Object.is(value1, value2)
+}
+
+export const isEmpty = (value: unknown): boolean => {
+    return value === undefined || value === null || value === ''
+}
+
+export const isRegExp = (value: unknown): value is RegExp => {
+    return value instanceof RegExp
 }
 
 export const extend: typeof Object.assign = Object.assign
