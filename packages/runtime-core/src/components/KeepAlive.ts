@@ -132,6 +132,11 @@ export const KeepAliveImpl = {
                 // 添加激活标识-即创建的时候不要直接挂载了，从 storageContainer 中取出来
                 rootVNode.shapeFlag |= ShapeFlags.COMPONENT_KEPT_ALIVE
                 // * 为什么会走到挂载的逻辑呢？因为判断节点是否一致的时候，会判断类型，而两个不同的组件，他们的组件配置对象肯定不是一个，自然就不一样，就会走挂载
+
+                // 如果复用了，表示进行了激活，则更新 key，让这个 key 变为最新的
+                // 即先删除旧的 key，再把这个 key 新添加一次
+                keys.delete(key)
+                keys.add(key)
             }
             // 如果缓存中不存在这个 key，则表示没有缓存过，需要缓存
             else {
