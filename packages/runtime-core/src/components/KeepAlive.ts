@@ -67,9 +67,27 @@ export const KeepAliveImpl = {
             }
         }
 
-        const { include, exclude } = props
+        const { include, exclude, max } = props
 
-        console.log(include, exclude)
+        // 保存当前的 vnode
+        //  - 因为 keepAlive 组件包裹的组件只会采用第一个，所以这个当前就是根节点
+        let current: any = null
+        function pruneCacheEntry(key) {
+            resetShapeFlag(current)
+            // 根据 key 删除缓存
+            cache.delete(key)
+            // 根据 key 删除等待缓存的 key
+            keys.delete(key)
+        }
+
+        function resetShapeFlag(vnode) {
+            if (vnode.shapeFlag & ShapeFlags.COMPONENT_SHOULD_KEEP_ALIVE) {
+                vnode.shapeFlag -= ShapeFlags.COMPONENT_SHOULD_KEEP_ALIVE
+            }
+            if (vnode.shapeFlag & ShapeFlags.COMPONENT_KEPT_ALIVE) {
+                vnode.shapeFlag -= ShapeFlags.COMPONENT_KEPT_ALIVE
+            }
+        }
 
         return () => {
             // keepAlive 默认会获取 slots 的 Default 属性，返回的第一个虚拟节点
@@ -97,6 +115,14 @@ export const KeepAliveImpl = {
             const key = isEmpty(rootVNode.key) ? comp : rootVNode.key
 
             const componentName = comp.name
+            // 如果设置了 include 或者 exclude，则表示需要过滤
+            //  - 如果当前组件名称在 include 的规则中，则表示需要缓存，结果取反，需要缓存则执行后面的代码
+            //  - 如果当前组件名称在 exclude 的规则中，则表示不需要缓存，如果为 true，则表示不执行后续代码
+            const isInclude = include && !matches(include, componentName)
+            const isExclude = exclude && matches(exclude, componentName)
+            if (componentName && (isInclude || isExclude)) {
+                return rootVNode
+            }
 
             // 如果缓存中存在这个 key，则表示已经缓存过，直接取缓存中存储的 dom
             const cachedVNode = cache.get(key)
@@ -114,26 +140,41 @@ export const KeepAliveImpl = {
                 // 这里不应该存储 rootVNode，因为这个 rootVNode 是组件的虚拟节点，不是组件的 dom
                 // 所以这里需要存储组件的 dom
                 pendingCacheKey = key
+
+                // 限制缓存数量
+                if (max && keys.size > max) {
+                    // 获取第一个 key
+                    //  - 因为 keys 是一个 Set，所以不能使用下标获取
+                    //  - 使用 value 方法获取迭代器，使用 next 方法获取第一个值
+                    const first = keys.values().next().value
+                    pruneCacheEntry(first)
+                }
             }
 
             // 添加标识，表示这个 vnode 是被 keepAlive 包裹的，需要缓存，在 unmount 删除组件的时候，不能真删除
             rootVNode.shapeFlag |= ShapeFlags.COMPONENT_SHOULD_KEEP_ALIVE
+
+            // 将当前 vnode 进行保存
+            current = rootVNode
 
             return rootVNode
         }
     }
 }
 
-function isCache(name, include, exclude) {}
-
+// 函数matches，用于判断name是否匹配pattern
 function matches(pattern, name) {
+    // 如果pattern是数组，则遍历数组中的每个元素，判断name是否匹配
     if (isArray(pattern)) {
         return pattern.some((p: string | RegExp) => matches(p, name))
+        // 如果pattern是字符串，则将字符串按逗号分隔，判断name是否在分隔后的数组中
     } else if (isString(pattern)) {
         return pattern.split(',').includes(name)
+        // 如果pattern是正则表达式，则使用正则表达式测试name
     } else if (isRegExp(pattern)) {
         return pattern.test(name)
     }
+    // 如果pattern不是数组、字符串或正则表达式，则返回false
     return false
 }
 
