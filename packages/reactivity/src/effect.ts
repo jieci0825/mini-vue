@@ -3,6 +3,7 @@ import { createDep, Dep } from './dep'
 import { TrackOpType, TriggerOpType } from './operations'
 import { ComputedRefImpl } from './computed'
 import { extend } from '@vue/shared'
+import { recordEffectScope } from './effectScope'
 
 let shouldTrack = true
 
@@ -50,6 +51,9 @@ export class ReactiveEffect<T = any> {
             this.scheduler = scheduler
         }
         this.fn = fn
+
+        // 初始化时，将当前 effect 记录到 effectScope 中
+        recordEffectScope(this)
     }
 
     run() {

@@ -4,7 +4,8 @@ export {
     isReactive,
     ref,
     isRef,
-    computed
+    computed,
+    effectScope
 } from '@vue/reactivity'
 export {
     watch,
