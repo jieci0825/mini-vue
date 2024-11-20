@@ -2,6 +2,7 @@ import { ITERATE_KEY } from './constants'
 import { createDep, Dep } from './dep'
 import { TrackOpType, TriggerOpType } from './operations'
 import { ComputedRefImpl } from './computed'
+import { extend } from '@vue/shared'
 
 let shouldTrack = true
 
@@ -16,15 +17,18 @@ interface ReactiveEffectOptions {
     lazy?: boolean
     scheduler?: (effect: ReactiveEffect) => void
 }
-export function effect<T = any>(fn: () => T, options: ReactiveEffectOptions = {}) {
+export function effect<T = any>(
+    fn: () => T,
+    options: ReactiveEffectOptions = {}
+) {
     const defaultOptions = {
         lazy: false
     }
-    const _options = Object.assign(defaultOptions, options)
+    options = extend(defaultOptions, options)
 
     const _effect = new ReactiveEffect(fn, options.scheduler)
 
-    if (_options.lazy === true) {
+    if (options.lazy === true) {
         return _effect.run.bind(_effect)
     } else {
         _effect.run()
@@ -34,10 +38,14 @@ export function effect<T = any>(fn: () => T, options: ReactiveEffectOptions = {}
 export type EffectScheduler = (effect: ReactiveEffect) => void
 
 export class ReactiveEffect<T = any> {
+    public active: boolean = true // 默认激活
     computed?: ComputedRefImpl<T>
     scheduler?: EffectScheduler
     depSetList: Dep[] = [] // [Set<Dep>, Set<Dep>, Set<Dep>] 将所有的依赖集合(Set)存储到这个数组中
-    constructor(public fn: () => T, scheduler: EffectScheduler | undefined = undefined) {
+    constructor(
+        public fn: () => T,
+        scheduler: EffectScheduler | undefined = undefined
+    ) {
         if (scheduler) {
             this.scheduler = scheduler
         }
@@ -46,7 +54,14 @@ export class ReactiveEffect<T = any> {
 
     run() {
         try {
+            // 非激活状态下只需要执行函数，不需要进行依赖收集
+            if (!this.active) {
+                return this.fn()
+            }
+            // 激活状态下才需要进行依赖收集
+            //  - 非激活状态下就不会把 activeEffect 进行赋值，activeEffect 为空，所以不会进行依赖收集
             activeEffect = this
+            // 收集新的依赖之前，清除之前的依赖
             cleanupEffect(this)
             effectStack.push(this)
             // 执行 fn，收集依赖
@@ -64,8 +79,10 @@ export class ReactiveEffect<T = any> {
     }
 
     stop() {
-        // TODO
-        console.log('effect stop')
+        // 停止依赖收集
+        this.active = false
+        // 清空依赖
+        cleanupEffect(this)
     }
 }
 
@@ -120,7 +137,12 @@ export function trackEffects(deps: Dep) {
  * @param key 属性
  * @param newValue 新的值
  */
-export function trigger(target: object, type: TriggerOpType, key: unknown, newValue: unknown) {
+export function trigger(
+    target: object,
+    type: TriggerOpType,
+    key: unknown,
+    newValue: unknown
+) {
     // 获取对应的 propMap
     const propMap = targetMap.get(target)
     // 根据 key 在 propMap 中获取对应的依赖集合
