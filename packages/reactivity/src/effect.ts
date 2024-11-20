@@ -53,17 +53,18 @@ export class ReactiveEffect<T = any> {
     }
 
     run() {
+        // 非激活状态下只需要执行函数，不需要进行依赖收集
+        if (!this.active) {
+            return this.fn()
+        }
+
+        // 激活状态下才需要进行依赖收集
+        //  - 非激活状态下就不会把 activeEffect 进行赋值，activeEffect 为空，所以不会进行依赖收集
+        activeEffect = this
+        // 收集新的依赖之前，清除之前的依赖
+        cleanupEffect(this)
+        effectStack.push(this)
         try {
-            // 非激活状态下只需要执行函数，不需要进行依赖收集
-            if (!this.active) {
-                return this.fn()
-            }
-            // 激活状态下才需要进行依赖收集
-            //  - 非激活状态下就不会把 activeEffect 进行赋值，activeEffect 为空，所以不会进行依赖收集
-            activeEffect = this
-            // 收集新的依赖之前，清除之前的依赖
-            cleanupEffect(this)
-            effectStack.push(this)
             // 执行 fn，收集依赖
             return this.fn()
         } finally {
@@ -79,10 +80,19 @@ export class ReactiveEffect<T = any> {
     }
 
     stop() {
-        // 停止依赖收集
-        this.active = false
-        // 清空依赖
-        cleanupEffect(this)
+        if (this.active) {
+            // 清空依赖
+            cleanupEffect(this)
+            // 停止依赖收集
+            this.active = false
+        }
+    }
+
+    resume() {
+        if (!this.active) {
+            this.active = true
+            this.fn() // 重新执行 effect
+        }
     }
 }
 
