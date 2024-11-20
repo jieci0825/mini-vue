@@ -1,0 +1,158 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <meta charset="UTF-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <title>Document</title>
+    </head>
+
+    <body>
+        <div id="app"></div>
+
+        <script src="../../dist/mini-vue.js"></script>
+
+        <script>
+            const { h, render, onMounted, KeepAlive } = MiniVue
+
+            // const functionComp = props => {
+            //     console.log('函数式组件', props)
+
+            //     return h('div', props.$attrs.msg)
+            // }
+            // // 会弹出警告，必须是一个带状态的组件
+            // render(
+            //     h(KeepAlive, null, {
+            //         default: () => h(myComp)
+            //     }),
+            //     document.querySelector('#app')
+            // )
+
+            const comp1 = {
+                name: 'Comp1',
+                setup() {
+                    onMounted(() => {
+                        console.log('comp1 mounted')
+                    })
+                },
+
+                render() {
+                    return h('div', 'comp1')
+                }
+            }
+
+            const comp2 = {
+                name: 'Comp2',
+                setup() {
+                    onMounted(() => {
+                        console.log('comp2 mounted')
+                    })
+                },
+
+                render() {
+                    return h('div', 'comp2')
+                }
+            }
+
+            const comp3 = {
+                name: 'Comp3',
+                setup() {
+                    onMounted(() => {
+                        console.log('comp3 mounted')
+                    })
+                },
+
+                render() {
+                    return h('div', 'comp3')
+                }
+            }
+
+            // let cur = comp1
+            // window.update = () => {
+            //     render(
+            //         h(KeepAlive, null, {
+            //             default: () => h(cur)
+            //         }),
+            //         document.querySelector('#app')
+            //     )
+            //     cur = cur === comp1 ? comp2 : comp1
+            // }
+            // update()
+
+            const keepAliveProps = {
+                include: ['Comp1', 'Comp2', 'Comp3'],
+                // exclude: 'Comp2',
+                max: 2
+            }
+
+            // 首次渲染 comp1
+            //  - 打印 'comp1 mounted'
+            render(
+                h(KeepAlive, keepAliveProps, {
+                    default: () => h(comp1)
+                }),
+                document.querySelector('#app')
+            )
+
+            // 1秒后切换到 comp2
+            //  - 打印 'comp2 mounted'
+            setTimeout(() => {
+                render(
+                    h(KeepAlive, keepAliveProps, {
+                        default: () => h(comp2)
+                    }),
+                    document.querySelector('#app')
+                )
+            }, 1000)
+
+            // 2秒后切换回 comp1
+            //  - 不打印 'comp1 mounted'
+            setTimeout(() => {
+                render(
+                    h(KeepAlive, keepAliveProps, {
+                        default: () => h(comp1)
+                    }),
+                    document.querySelector('#app')
+                )
+            }, 2000)
+
+            setTimeout(() => {
+                render(
+                    h(KeepAlive, keepAliveProps, {
+                        default: () => h(comp3)
+                    }),
+                    document.querySelector('#app')
+                )
+            }, 3000)
+
+            setTimeout(() => {
+                render(
+                    h(KeepAlive, keepAliveProps, {
+                        default: () => h(comp1)
+                    }),
+                    document.querySelector('#app')
+                )
+            }, 4000)
+
+            setTimeout(() => {
+                render(
+                    h(KeepAlive, keepAliveProps, {
+                        default: () => h(comp3)
+                    }),
+                    document.querySelector('#app')
+                )
+            }, 5000)
+
+            // 允许最大缓存2个组件
+            //  - comp1 打印 'comp1 mounted' - 将comp1缓存
+            //  - comp2 打印 'comp2 mounted' - 将comp2缓存
+            //  - comp1 不打印 'comp1 mounted' - 从缓存中读取comp1
+            //  - comp3 打印 'comp3 mounted' - 将comp3缓存，将最早的缓存comp1从缓存中移除
+            //  - comp1 打印 'comp1 mounted' - 缓存中没有comp1，重新渲染，将comp1重新加入缓存，将最早的缓存comp2从缓存中移除
+            //  - comp3 不打印 'comp3 mounted' - 从缓存中读取comp3
+            // 最后缓存的是：[comp3, comp1]
+        </script>
+    </body>
+</html>
+        </script>
+    </body>
+</html>
