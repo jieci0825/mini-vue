@@ -14,6 +14,8 @@ export function nextTick(fn) {
  */
 export function flushJob() {
   if (isFlushing) return
+  // 因为是微任务队列，所以这个地方只需要被调用一次即可，调用一次将这个微任务加入到时间队列即可
+  // 不用管 queuePreFlushCbs 方法会添加执行多少次，加多少个任务
   isFlushing = true
   p.then(() => {
     jobQueue.forEach(job => job())
